@@ -1,11 +1,13 @@
 package com.dilatush.pakbus;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
 import static com.dilatush.pakbus.PakBusBaseDataType.*;
+import static com.dilatush.pakbus.PakBusDataType.*;
 
 /**
  * Instances of this class represent a PakCtrl or BMP5 message.  There are no individual classes for each of the many message types, which have
@@ -31,6 +33,7 @@ public class Message {
     private boolean finalized;      // true if getBytes() has been called and the byte length has been set...
     private boolean initialized;    // true if a byte buffer has been decoded or at least one field has been set...
     private boolean valid;          // true if a byte buffer has been successfully decoded, or if all non-optional fields have been set...
+    private int bitLength;          // number of bits in the entire message (computed upon finalization)...
 
 
     public Message( final MessageType _type ) {
@@ -44,6 +47,190 @@ public class Message {
         valid = false;
         finalized = false;
         fieldInfo = new HashMap<>( 100 );
+    }
+
+
+    /**
+     * Returns a buffer containing the bytes for the given field name, containing exactly the number of bytes required to hold the field data, and
+     * with the position at 0 and limit at the number of bytes.  If the field has an uneven number of bytes, the value will be LSB-justified, so that
+     * any unused bits are the MSBs.  For example, a 12 bit value will be stored in two bytes as 0000xxxx xxxxxxxx.  This method is the base for all
+     * other getters, all of which wrap this method with a bytes-to-something converstion.
+     *
+     * @param _fieldName the name of the field whose value is to be retrieved.
+     * @return the buffer containing the bytes for the retrieved field.
+     */
+    public ByteBuffer get( final String _fieldName ) {
+
+        // if this message is empty, invalid, or not finalized, then getting a field is disallowed...
+        if( !valid || !initialized || !finalized )
+            throw new IllegalStateException( "Attempted to get a field from a message that is invalid, uninitialized, or not finalized" );
+
+        // some setup...
+        MessageFieldDefinition def = definition.get( _fieldName );
+        if( def == null )
+            throw new IllegalArgumentException( "Field name does not exist in this message: " + _fieldName );
+        FieldInfo info = fieldInfo.get( def.getName() );
+        if( info == null )
+            throw new IllegalStateException( "Field information for " + def.getName() + " is missing" );
+
+        // figure out how many bytes we need and get our buffer...
+        int bytesNeeded = (info.length +  7) >>> 3;
+        ByteBuffer result = ByteBuffer.allocate( bytesNeeded );
+
+        // some setup for the byte copying...
+        Offset srcPos = getBitOffset( _fieldName );
+        Offset dstPos = new Offset( 0, info.length & 7 );
+
+        // if we have an even number of bytes, and the source and destination positions are on byte boundaries, just copy bytes...
+        if( ((info.length & 7) == 0) && (srcPos.bitOffset == 0) && (dstPos.bitOffset == 0) ) {
+
+            // do a simple byte copy...
+            int oldPos = bytes.position();
+            int oldLim = bytes.limit();
+            bytes.position( srcPos.byteOffset );
+            bytes.limit( srcPos.byteOffset + bytesNeeded );
+            result.position( dstPos.byteOffset );
+            result.put( bytes );
+            result.flip();
+            bytes.limit( oldLim );
+            bytes.position( oldPos );
+        }
+
+        // otherwise, we do things the harder way...
+        else {
+
+            // now we copy the bytes...
+            copyBits( bytes, srcPos, result, dstPos, info.length );
+        }
+
+        // if this is a little-endian field, flip the bytes...
+        checkForLittleEndian( def, result, bytesNeeded );
+
+        // and we're done...
+        return result;
+    }
+
+
+    public String getString( final String _fieldName, final Charset _charset ) {
+
+        // some setup and sanity checking...
+        if( (_fieldName == null) || (_fieldName.length() == 0) || (_charset == null) )
+            throw new IllegalArgumentException( "Required argument is missing" );
+        MessageFieldDefinition def = definition.get( _fieldName );
+        if( def == null )
+            throw new IllegalArgumentException( "Field " + _fieldName + " is not present in this message" );
+        if( !((def.getPakbusType() == ASCIIZ) || (def.getPakbusType() == ASCII)) )
+            throw new IllegalArgumentException( "Field " + _fieldName + " is not a string" );
+
+        // first we get the bytes from this field...
+        ByteBuffer fieldBytes = get( _fieldName );
+
+        // if this is a zero-terminated string, cut off the terminator...
+        if( def.getPakbusType() == ASCIIZ )
+            fieldBytes.limit( fieldBytes.limit() - 1 );
+
+        // now we're all ready to go...
+        fieldBytes.position( 0 );
+        byte[] coded = new byte[fieldBytes.limit()];
+        fieldBytes.get( coded );
+        return new String( coded, _charset );
+    }
+
+
+    public byte[] getBytes( final String _fieldName ) {
+
+        // some setup and sanity checking...
+        if( (_fieldName == null) || (_fieldName.length() == 0) )
+            throw new IllegalArgumentException( "Required argument is missing" );
+        MessageFieldDefinition def = definition.get( _fieldName );
+        if( def == null )
+            throw new IllegalArgumentException( "Field " + _fieldName + " is not present in this message" );
+        if( !((def.getPakbusType() == Bytes) || (def.getPakbusType() == BytesZ)) )
+            throw new IllegalArgumentException( "Field " + _fieldName + " is not a byte array field" );
+
+        // first we get the bytes from this field...
+        ByteBuffer fieldBytes = get( _fieldName );
+
+        // if this is a zero-terminated array, cut off the terminator...
+        if( def.getPakbusType() == BytesZ )
+            fieldBytes.limit( fieldBytes.limit() - 1 );
+
+        // now we're all ready to go...
+        fieldBytes.position( 0 );
+        byte[] byteArray = new byte[fieldBytes.limit()];
+        fieldBytes.get( byteArray );
+        return byteArray;
+    }
+
+
+    public byte getByte( final String _fieldName ) {
+        return (byte) getInteger( _fieldName, 8 );
+    }
+
+
+    public short getShort( final String _fieldName ) {
+        return (short) getInteger( _fieldName, 16 );
+    }
+
+
+    public int getInt( final String _fieldName ) {
+        return (int) getInteger( _fieldName, 32 );
+    }
+
+
+    public long getLong( final String _fieldName ) {
+        return getInteger( _fieldName, 64 );
+    }
+
+
+    public boolean getBoolean( final String _fieldName ) {
+        return getInteger( _fieldName, 64 ) != 0;
+    }
+
+
+    /**
+     * Extracts an integer type from the field with the given name.  "SB" is the number of bits in the message field, and "RB" is the number of bits
+     * requested (the _bits argument).  If SB > RB, throws an IllegalArgumentException.  SB == RB, returns exactly the value extracted.  If SB < RB,
+     * and the field type is a signed integer, returns a value with the sign bit extended.  Otherwise, returns the value without sign extension.
+     *
+     * @param _fieldName the name of the field to be extracted
+     * @param _bits the number of significant bits in the result
+     * @return the extracted integer type
+     */
+    private long getInteger( final String _fieldName, final int _bits ) {
+
+        // some setup and sanity checking...
+        if( (_fieldName == null) || (_fieldName.length() == 0) )
+            throw new IllegalArgumentException( "Required field name is missing" );
+        MessageFieldDefinition def = definition.get( _fieldName );
+        FieldInfo info = fieldInfo.get( _fieldName );
+        if( _bits < info.length )
+            throw new IllegalArgumentException( "Requested fewer bits (" + _bits + ") than the field size (" + info.length + ")" );
+
+        // first we get the bytes from this field...
+        ByteBuffer fieldBytes = get( _fieldName );
+
+        // get our raw integer...
+        long result;
+        switch( fieldBytes.limit() ) {
+            case 1: result = fieldBytes.get() & 0xFF; break;
+            case 2: result = fieldBytes.getShort() & 0xFFFF; break;
+            case 4: result = fieldBytes.getInt() & 0xFFFFFFFFL; break;
+            case 8: result = fieldBytes.getLong(); break;
+            default: throw new IllegalStateException( "Attempted to extract integer from field whose stored length ("
+                    + fieldBytes.limit() + ") is not 1, 2, 4, or 8 bytes" );
+        }
+
+        // at this point we have our return value in unsigned format; if it's supposed to be signed we need to fix that...
+        if( def.getPakbusType().getBase() == SignedInteger ) {
+
+            // we use the left shift/right shift trick to extend the sign...
+            result <<= 64 - info.length;
+            result >>= 64 - info.length;
+        }
+
+        // and we're done...
+        return result;
     }
 
 
@@ -71,7 +258,6 @@ public class Message {
 
         // get the offset to this field's MSB...
         Offset dstPos = getBitOffset( _fieldName );
-        Offset dstEnd = dstPos.add( def.getBits() );
 
         // if this is a variable length field, we handle it specially...
         if( def.getBits() == 0 ) {
@@ -104,28 +290,12 @@ public class Message {
         if( bytesNeeded != _buffer.limit() )
             throw new IllegalArgumentException( "Given buffer has wrong number of bytes - expected " + bytesNeeded + ", got " + _buffer.limit() );
 
+        // if we have a little-endian field, we need to flip the bytes...
+        checkForLittleEndian( def, _buffer, bytesNeeded );
+
         // now we do the actual setting...
         Offset srcPos = new Offset( 0, 8 * _buffer.limit() - def.getBits() );
-        int bitsRemaining = def.getBits();
-        while( bitsRemaining > 0 ) {
-
-            // figure out how many bits we can fit in the current byte...
-            int fitBits = Math.min( bitsRemaining, Math.min( 8 - srcPos.bitOffset, 8 - dstPos.bitOffset ) );
-
-            // if we can't fit at least one bit, then we've got a problem...
-            if( fitBits < 1 )
-                throw new IllegalStateException( "Can't set at least one bit - computed " + fitBits );
-
-            // set the bits...
-            int setMask = Integer.rotateLeft( BITS_MASK[fitBits], 8 - (dstPos.bitOffset + fitBits) );
-            int srcBits = Integer.rotateLeft( _buffer.get( srcPos.byteOffset ), srcPos.bitOffset - dstPos.bitOffset );
-            bytes.put( dstPos.byteOffset, (byte)( (bytes.get( dstPos.byteOffset ) & ~setMask) | (srcBits & setMask) ) );
-
-            // update our source and destination positions, and bit count...
-            bitsRemaining -= fitBits;
-            srcPos = srcPos.add( fitBits );
-            dstPos = dstPos.add( fitBits );
-        }
+        copyBits( _buffer, srcPos, bytes, dstPos, def.getBits() );
 
         // show that we've set this field...
         FieldInfo info = fieldInfo.get( _fieldName );
@@ -134,6 +304,74 @@ public class Message {
         // some housekeeping...
         initialized = true;
         checkValid();
+    }
+
+
+    /**
+     * If we're getting or setting a little-endian field, then this method flips the byte order.  Otherwise, it does nothing.
+     *
+     * @param _def the field definition for the field we're working on
+     * @param _dst the buffer containing the destination bytes
+     * @param _bytes the number of bytes
+     */
+    private void checkForLittleEndian( final MessageFieldDefinition _def, final ByteBuffer _dst, final int _bytes ) {
+
+        // if this field is little-endian, we have work to do...
+        if( _def.getPakbusType().getOrder() == ByteOrder.LITTLE_ENDIAN ) {
+
+            // make sure we have an even number of bytes...
+            if( (_def.getBits() & 7) != 0 )
+                throw new IllegalStateException( "Field with a length that is an uneven number of bytes was marked Little-Endian" );
+
+            // ok, now flip the bytes...
+            int fs = 0;
+            int fe = _bytes - 1;
+            while( fs < fe ) {
+                byte b = _dst.get( fs );
+                _dst.put( fs, _dst.get( fe ) );
+                _dst.put( fe, b );
+                fs++;
+                fe--;
+            }
+        }
+    }
+
+
+    /**
+     * Copies the given number of bits from the given source buffer at the given position to the give destination buffer at the given position.
+     *
+     * @param _src the source buffer
+     * @param _srcPos the source position
+     * @param _dst the destination buffer
+     * @param _dstPos the destination position
+     * @param _bits the number of bits to copy
+     */
+    private void copyBits( final ByteBuffer _src, Offset _srcPos, final ByteBuffer _dst, final Offset _dstPos, final int _bits ) {
+
+        int remainingBits = _bits;
+        Offset srcPos = _srcPos;
+        Offset dstPos = _dstPos;
+
+
+        while( remainingBits > 0 ) {
+
+            // figure out how many bits we can fit in the current byte...
+            int fitBits = Math.min( remainingBits, Math.min( 8 - srcPos.bitOffset, 8 - dstPos.bitOffset ) );
+
+            // if we can't fit at least one bit, then we've got a problem...
+            if( fitBits < 1 )
+                throw new IllegalStateException( "Can't set at least one bit - computed " + fitBits );
+
+            // set the bits...
+            int setMask = Integer.rotateLeft( BITS_MASK[fitBits], 8 - (dstPos.bitOffset + fitBits) );
+            int srcBits = Integer.rotateLeft( _src.get( srcPos.byteOffset ) & 0xFF, srcPos.bitOffset - dstPos.bitOffset );
+            _dst.put( dstPos.byteOffset, (byte)( (_dst.get( dstPos.byteOffset ) & ~setMask) | (srcBits & setMask) ) );
+
+            // update our source and destination positions, and bit count...
+            remainingBits -= fitBits;
+            srcPos = srcPos.add( fitBits );
+            dstPos = dstPos.add( fitBits );
+        }
     }
 
 
@@ -193,6 +431,43 @@ public class Message {
 
 
     /**
+     * Sets the value of the field with the given name to the given byte value.  The field's type must be a byte array type.
+     *
+     * @param _fieldName the field name whose value is to be set
+     * @param _bytes the bytes containing the value to set
+     */
+    public void set( final String _fieldName, final byte[] _bytes ) {
+
+        // sanity checks...
+        if( (_fieldName == null) || (_fieldName.length() == 0) || (_bytes == null) )
+            throw new IllegalArgumentException( "Required argument is missing" );
+        MessageFieldDefinition def = definition.get( _fieldName );
+        if( def == null )
+            throw new IllegalArgumentException( "Field name does not exist in this message: " + _fieldName );
+
+        // we have two possibly correct field data types here: Bytes and BytesZ.  The first must be the last field in a message; the second
+        // may appear anywhere...
+        PakBusDataType type = def.getPakbusType();
+        boolean isLast = (def == definition.get( definition.size() - 1 ));
+        if( (type != Bytes) && (type != BytesZ) )
+            throw new IllegalArgumentException( "Attempting to store bytes to a field whose type is "
+                    + type + " instead of the required Bytes or BytesZ" );
+        if( (type == Bytes) && !isLast )
+            throw new IllegalArgumentException( "Attempting to store bytes to a Bytes field that is not the last field of the message" );
+
+        // all is ok, so make a buffer to hold our bytes and then set them...
+        ByteBuffer buffer = ByteBuffer.allocate( _bytes.length + 1 );  // we're leaving room for the possible terminator...
+        buffer.put( _bytes );
+        if( type == BytesZ )
+            buffer.put( (byte) 0 );
+        buffer.flip();
+
+        // now handle it through the base setter...
+        set( _fieldName, buffer );
+    }
+
+
+    /**
      * Sets the value of the field with the given name to the given string value, encoded with the given character set, as a zero-terminated
      * variable length string.
      *
@@ -208,7 +483,7 @@ public class Message {
         MessageFieldDefinition def = definition.get( _fieldName );
         if( def == null )
             throw new IllegalArgumentException( "Field name does not exist in this message: " + _fieldName );
-        if( def.getPakbusType() != PakBusDataType.ASCIIZ )
+        if( def.getPakbusType() != ASCIIZ )
             throw new IllegalArgumentException( "Attempting to store variable length string to a field whose type is "
                     + def.getPakbusType() + " instead of the required ASCIIZ" );
 
@@ -219,6 +494,7 @@ public class Message {
         ByteBuffer buffer = ByteBuffer.allocate( bytes.length + 1 );  // we're adding room for the terminating zero...
         buffer.put( bytes );
         buffer.put( (byte) 0 );  // the terminator...
+        buffer.flip();
 
         // now handle it through the base setter...
         set( _fieldName, buffer );
@@ -245,10 +521,8 @@ public class Message {
      * This method should only be called after all fields have been set.  Invoking this method computes the final length of the encoded message and
      * marks the message as finalized.  No further mutations (field settings) are allowed after this.  Returns a buffer containing the bytes of the
      * encoded message, with the position set to zero and the limit and capacity set to the number of bytes in the encoded message.
-     *
-     * @return the buffer containing the message's bytes
      */
-    public ByteBuffer getBytes() {
+    public void finalizeMessage() {
 
         // first we set the MsgType field, and if it hasn't been set already, the TranNbr field...
         set( "MsgType", type.getCode() );   // we set this one by default...
@@ -261,7 +535,7 @@ public class Message {
             throw new IllegalStateException( "Attempted to get bytes from an invalid message" );
 
         // now we find the last byte of our message...
-        int bitLength = 0;
+        bitLength = 0;
         for( int i = 0; i < definition.size(); i++ ) {
 
             // get the definition and info...
@@ -276,6 +550,21 @@ public class Message {
         // make sure we ended on an even byte boundary...
         if( (bitLength & 7) != 0 )
             throw new IllegalStateException( "Attempted to get bytes from a message that has an uneven length" );
+
+        // mark this as finalized...
+        finalized = true;
+    }
+
+
+    /**
+     * Returns the encoded bytes for this message.  This method will result in an error for empty, involid, or non-finalized messages.
+     *
+     * @return the buffer containing this message's encoding
+     */
+    public ByteBuffer encoding() {
+
+        if( !valid || !initialized || !finalized )
+            throw new IllegalStateException( "Attempted to get encoding for message that is empty, invalid, or not finalized" );
 
         // calculate the bytes needed, and return with a sweet little buffer full of message bytes...
         int bytesNeeded = bitLength >>> 3;
@@ -426,16 +715,31 @@ public class Message {
 
     public static void main( String[] _args ) {
 
-        // create a test message...
-        Message msg = new Message( MessageType.GetSettingsReq );
+        Message msg;
+
+        msg = new Message( MessageType.DeliveryFailure );
+        msg.set( "ErrCode", 0x55 );
+        msg.set( "HiProtoCode", 0xf );
+        msg.set( "DstPBAddr", 0x123 );
+        msg.set( "HopCnt", 3 );
+        msg.set( "SrcPBAddr", 0x456 );
+        msg.set( "MsgData", new byte[] {9,8,7,6,5,4,3,2,1,0} );
+        msg.finalizeMessage();
+        byte mt = msg.getByte( "MsgType" );
+        int addr = msg.getInt( "DstPBAddr" );
+        byte[] ba = msg.getBytes( "MsgData" );
+
+        msg = new Message( MessageType.GetSettingsReq );
         msg.set( "NameList", "os.version", Charset.forName( "US-ASCII" ) );
-        ByteBuffer bytes = msg.getBytes();
+        msg.finalizeMessage();
+        String osv = msg.getString( "NameList", Charset.forName( "US-ASCII" ) );
 
         msg = new Message( MessageType.HelloTrnsRsp );
         msg.set( "IsRouter", false );
         msg.set( "HopMetric", 4 );
         msg.set( "VerifyIntv", 100 );
-        bytes = msg.getBytes();
+        msg.finalizeMessage();
+        boolean ir = msg.getBoolean( "IsRouter" );
 
         msg.hashCode();
     }
