@@ -21,6 +21,10 @@ public class PakBusFloat {
      */
     public static ByteBuffer toPakBusFloat( final double _n, final PakBusDataType _type ) {
 
+        // sanity check...
+        if( _type == null )
+            throw new IllegalArgumentException( "Required argument missing" );
+
         // different strokes for different folks (or floating types)...
         switch( _type ) {
 
@@ -34,7 +38,7 @@ public class PakBusFloat {
             case IEEE4Lsf:
             case IEEE4L:
                 ByteBuffer result = ByteBuffer.allocate( 4 );
-                result.order( ByteOrder.BIG_ENDIAN );
+                result.order( _type.getOrder() );
                 result.putFloat( (float) _n );
                 result.flip();
                 return result;
@@ -43,7 +47,7 @@ public class PakBusFloat {
             case IEEE8Lsf:
             case IEEE8L:
                 result = ByteBuffer.allocate( 8 );
-                result.order( ByteOrder.BIG_ENDIAN );
+                result.order( _type.getOrder() );
                 result.putDouble( _n );
                 result.flip();
                 return result;
@@ -54,7 +58,38 @@ public class PakBusFloat {
 
 
     public static double fromPakBusFloat( final ByteBuffer _buffer, final PakBusDataType _type ) {
-        return 0;
+
+        // sanity check...
+        if( (_buffer == null) || (_type == null) )
+            throw new IllegalArgumentException( "Required argument missing" );
+
+        // different strokes for different folks (or floating types)...
+        switch( _type ) {
+
+            case FP2: return fromFP2( _buffer );
+
+            case FP3: return fromFP3( _buffer );
+
+            case FP4: return fromFP4( _buffer );
+
+            case IEEE4:
+            case IEEE4Lsf:
+            case IEEE4L:
+                if( _buffer.limit() != 4 )
+                    throw new IllegalArgumentException( "Buffer is not the correct length: " + _buffer.limit() + " instead of 4" );
+                _buffer.order( _type.getOrder() );
+                return (double)(_buffer.getFloat( 0 ));
+
+            case IEEE8:
+            case IEEE8Lsf:
+            case IEEE8L:
+                if( _buffer.limit() != 8 )
+                    throw new IllegalArgumentException( "Buffer is not the correct length: " + _buffer.limit() + " instead of 8" );
+                _buffer.order( _type.getOrder() );
+                return _buffer.getDouble( 0 );
+
+            default: throw new IllegalArgumentException( "The type argument (" + _type + ") is not a floating type" );
+        }
     }
 
 
@@ -68,7 +103,37 @@ public class PakBusFloat {
     private static final double MAX_FP2_MAGNITUDE = 8189;
     private static final int FP2_NAN = 0b0_1001_1111_1111_1110;
     private static final int FP2_INF = 0b0_0001_1111_1111_1111;
+    private static final int FP2_MAN = 0b0_0001_1111_1111_1111;
     private static final int FP2_SGN = 0b0_1000_0000_0000_0000;
+    private static final int FP2_EXP = 0b0_0110_0000_0000_0000;
+
+
+    private static double fromFP2( final ByteBuffer _buffer ) {
+
+        // sanity check...
+        if( _buffer.limit() != 2 )
+            throw new IllegalArgumentException( "Buffer length is invalid: " + _buffer.limit() + " instead of 2" );
+
+        // first we get the bits...
+        _buffer.order( ByteOrder.BIG_ENDIAN );
+        int bits = _buffer.getShort( 0 ) & 0xFFFF;
+
+        // handle our special cases...
+        switch( bits ) {
+            case FP2_NAN:           return Double.NaN;
+            case FP2_INF:           return Double.POSITIVE_INFINITY;
+            case FP2_INF | FP2_SGN: return Double.NEGATIVE_INFINITY;
+        }
+
+        // chop it up...
+        boolean neg = (bits & FP2_SGN) != 0;
+        int exp = (bits & FP2_EXP) >>> 13;
+        int mantissa = (bits & FP2_MAN);
+
+        // now make a double out of it...
+        return (neg ? -1.0d : 1.0d ) * mantissa * Math.pow( 10.0d, -exp );
+    }
+
 
     private static ByteBuffer toFP2( final double _n ) {
 
@@ -83,7 +148,7 @@ public class PakBusFloat {
             bits = FP2_NAN;
         else if( Double.isInfinite( _n ) )
             bits = FP2_INF;
-        if( an >= (0.5 + MAX_FP2_MAGNITUDE) )
+        else if( an >= (MAX_FP2_MAGNITUDE) )
             bits = FP2_INF;
 
         // or handle the normal cases...
@@ -117,7 +182,37 @@ public class PakBusFloat {
     private static final double MAX_FP3_MAGNITUDE = 1_048_573;
     private static final int FP3_NAN = 0b0_1000_1111_1111_1111_1111_1110;
     private static final int FP3_INF = 0b0_0000_1111_1111_1111_1111_1111;
+    private static final int FP3_MAN = 0b0_0000_1111_1111_1111_1111_1111;
     private static final int FP3_SGN = 0b0_1000_0000_0000_0000_0000_0000;
+    private static final int FP3_EXP = 0b0_0111_0000_0000_0000_0000_0000;
+
+
+    private static double fromFP3( final ByteBuffer _buffer ) {
+
+        // sanity check...
+        if( _buffer.limit() != 3 )
+            throw new IllegalArgumentException( "Buffer length is invalid: " + _buffer.limit() + " instead of 3" );
+
+        // first we get the bits...
+        _buffer.order( ByteOrder.BIG_ENDIAN );
+        int bits = ((_buffer.get( 0 ) & 0xFF) << 16) | (_buffer.getShort(1 ) & 0xFFFF);
+
+        // handle our special cases...
+        switch( bits ) {
+            case FP3_NAN:           return Double.NaN;
+            case FP3_INF:           return Double.POSITIVE_INFINITY;
+            case FP3_INF | FP3_SGN: return Double.NEGATIVE_INFINITY;
+        }
+
+        // chop it up...
+        boolean neg = (bits & FP3_SGN) != 0;
+        int exp = (bits & FP3_EXP) >>> 20;
+        int mantissa = (bits & FP3_MAN);
+
+        // now make a double out of it...
+        return (neg ? -1.0d : 1.0d ) * mantissa * Math.pow( 10.0d, -exp );
+    }
+
 
     private static ByteBuffer toFP3( final double _n ) {
 
@@ -132,7 +227,7 @@ public class PakBusFloat {
             bits = FP3_NAN;
         else if( Double.isInfinite( _n ) )
             bits = FP3_INF;
-        if( an >= MAX_FP3_MAGNITUDE )
+        else if( an >= MAX_FP3_MAGNITUDE )
             bits = FP3_INF;
 
             // or handle the normal cases...
@@ -180,6 +275,42 @@ public class PakBusFloat {
      */
     private static final int FP4_INF = 0b0_0111_1111_1111_1111_1111_1111_1111_1111;
     private static final int FP4_SGN = 0b0_1000_0000_0000_0000_0000_0000_0000_0000;
+    private static final int FP4_ESG = 0b0_0100_0000_0000_0000_0000_0000_0000_0000;
+    private static final int FP4_EXP = 0b0_0011_1111_0000_0000_0000_0000_0000_0000;
+    private static final int FP4_MAN = 0b0_0000_0000_1111_1111_1111_1111_1111_1111;
+
+
+    private static double fromFP4( final ByteBuffer _buffer ) {
+
+        // sanity check...
+        if( _buffer.limit() != 4 )
+            throw new IllegalArgumentException( "Buffer length is invalid: " + _buffer.limit() + " instead of 4" );
+
+        // first we get the bits...
+        _buffer.order( ByteOrder.BIG_ENDIAN );
+        int bits = _buffer.getInt( 0 );
+
+        // handle our special cases (note that there is no NaN for FP4)...
+        switch( bits ) {
+            case 0:                 return 0d;
+            case FP4_SGN:           return -0d;
+            case FP4_INF:           return Double.POSITIVE_INFINITY;
+            case FP4_INF | FP4_SGN: return Double.NEGATIVE_INFINITY;
+        }
+
+        // chop it up...
+        boolean neg = (bits & FP4_SGN) != 0;
+        boolean expNeg = (bits & FP4_ESG) == 0;  // exponent's sign is 1 for POSITIVE...
+        int exp = (bits & FP4_EXP) >>> 24;
+        int mantissa = (bits & FP4_MAN);
+
+        // now make a double out of it...
+        long dExp = (long)((expNeg ? -exp : exp) + 1023) << 52;
+        long dMan = (long)mantissa << 28;
+        long dBits = dExp | dMan | (neg ? 0x8000_0000_0000_0000L : 0);
+        return Double.longBitsToDouble( dBits );
+    }
+
 
     private static ByteBuffer toFP4( final double _n ) {
 
@@ -212,8 +343,9 @@ public class PakBusFloat {
             bits = 0;
 
         // now the slightly more difficult case of the normal numbers...
+        // note the exponent's sign bit is set if it's POSITIVE (weird!)...
         else
-            bits = ((exp < 0) ? (1 << 30) : 0) | (Math.abs( exp ) << 24 ) | mantissa;
+            bits = ((exp >= 0) ? (1 << 30) : 0) | (Math.abs( exp ) << 24 ) | mantissa;
 
         // set the sign bit if we're negative...
         if( _n < 0 ) bits |= FP4_SGN;
@@ -224,17 +356,5 @@ public class PakBusFloat {
         result.putInt( bits );
         result.flip();
         return result;
-    }
-
-
-    public static void main( String[] _args ) {
-
-        ByteBuffer fp2 = toPakBusFloat( 12.3456, PakBusDataType.FP2 );
-        ByteBuffer fp3 = toPakBusFloat( -12.3456, PakBusDataType.FP3 );
-        ByteBuffer fp4 = toPakBusFloat( 12.3456, PakBusDataType.FP4 );
-        ByteBuffer sp = toPakBusFloat( -12.345, PakBusDataType.IEEE4 );
-        ByteBuffer dp = toPakBusFloat( 12.3456, PakBusDataType.IEEE8 );
-
-        fp2.hashCode();
     }
 }
