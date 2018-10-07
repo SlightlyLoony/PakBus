@@ -36,6 +36,72 @@ public class Message {
     private int bitLength;          // number of bits in the entire message (computed upon finalization)...
 
 
+    /**
+     * Creates a new instance of this class by decoding the given buffer.  This method assumes that the buffer's position is the first byte of the
+     * message to be decoded, and the buffer's limit defines the last byte.  This method will return Invalid message instance if the buffer cannot be
+     * decoded, or an Empty message instance if the buffer contains no bytes; otherwise the decoded message instance is returned.
+     *
+     * @param _buffer the buffer to be decoded
+     */
+    public static Message decode( final ByteBuffer _buffer, final Protocol _protocol ) {
+
+        int initialPosition = _buffer.position();
+        int initialLimit = _buffer.limit();
+
+        try {
+
+            // if we have no bytes, return an EMPTY message instance...
+            if( _buffer.remaining() < 2) {
+                Message msg = new Message( MessageType.EMPTY, null, _buffer, null );
+                msg.finalized = false;
+                msg.initialized = false;
+                msg.valid = false;
+                return msg;
+            }
+
+            // get the message type...
+            MessageType type = MessageType.get( _protocol, _buffer.get( _buffer.position() ) );
+            if( type == null )
+                throw new IllegalStateException( "Type cannot be decoded" );
+
+            // make our message...
+            Message msg = new Message( type );
+            msg.bytes.put( _buffer );
+
+            // TODO: how on earth do we do this???
+        }
+
+        // if anything goes wrong with the decoding, we just return an invalid message...
+        catch( Exception _e ) {
+            _buffer.position( initialPosition );
+            _buffer.limit( initialLimit );
+            Message msg = new Message( MessageType.INVALID, null, _buffer, null );
+            msg.finalized = true;
+            msg.initialized = true;
+            msg.valid = false;
+            return msg;
+        }
+
+        return null;
+    }
+
+
+    /**
+     * Creates an instance of this class with the given parameters.  Intended for use by static factory methods only.
+     */
+    private Message( final MessageType _type, final MessageDefinition _def, final ByteBuffer _bytes, Map<String,FieldInfo> _info ) {
+        type = _type;
+        definition = _def;
+        bytes = _bytes;
+        fieldInfo = _info;
+    }
+
+
+    /**
+     * Creates an uninitialized instance of this class of the given message type, ready for initialization (through the setters).
+     *
+     * @param _type the type of this message
+     */
     public Message( final MessageType _type ) {
 
         type = _type;
@@ -47,6 +113,12 @@ public class Message {
         valid = false;
         finalized = false;
         fieldInfo = new HashMap<>( 100 );
+
+        // initialize the dynamic field info to the default state for an uninitialized message...
+        for( int i = 0; i < definition.size(); i++ ) {
+            MessageFieldDefinition def = definition.get( i );
+            fieldInfo.put( def.getName(), new FieldInfo( false, def.getBits(), null, def.getOptionalLevel() ) );
+        }
     }
 
 
@@ -588,13 +660,13 @@ public class Message {
             MessageFieldDefinition def = definition.get( i );
 
             // if it's not required, then continue...
-            if( def.isOptional() )
-                continue;
+//            if( def.isOptional() )
+//                continue;
 
             // if it IS required, but not set, then we're done...
             FieldInfo info = fieldInfo.get( def.getName() );
-            if( (info == null) || (!info.set && !def.isOptional()) )
-                return;
+//            if( (info == null) || (!info.set && !def.isOptional()) )
+//                return;
         }
 
         // if we get here, then all required fields have been set...
@@ -612,46 +684,56 @@ public class Message {
      */
     private Offset getBitOffset( final String _fieldName ) {
 
+        // sanity check...
         if( _fieldName == null )
             throw new IllegalArgumentException( "Field name argument is missing" );
 
         // first we check to see if we've already computed the offset...
         FieldInfo info = fieldInfo.get( _fieldName );
-        if( info != null )
+        if( info.offset != null )
             return info.offset;
 
 
-        // looks like we're going to have to do it the hard way...
-        Offset result = new Offset();
+        // looks like we're going to have to do it the hard way, by calculating from the beginning...
+        Offset result = new Offset( 0, 0 );
         for( int i = 0; i < definition.size(); i++ ) {
 
             // some prep...
             MessageFieldDefinition def = definition.get( i );
             info = fieldInfo.get( def.getName() );
 
-            // if we don't already have it, save the field info, since we've gone to the trouble of computing it...
-            if( info == null ) {
-                info = new FieldInfo( false, def.getBits(), result );
-                fieldInfo.put( def.getName(), info );
-            }
+            // if we don't already have it, save it, since we've gone to the trouble of computing it...
+            if( info.offset == null )
+                info.offset = result;
 
             // if we've found this field, then we're done...
             if( _fieldName.equals( def.getName() ) )
                 return result;
 
-            // if this is a fixed length field, add its offset and carry on...
-            if( def.getBits() > 0 ) {
-                result = result.add( def.getBits() );
+            // if this is a forbidden field, carry on...
+            if( info.optional < 0 )
                 continue;
+
+            // if this is a required field...
+            if( info.optional == 0 ) {
+
+                // if this is a fixed length field, add its offset and carry on...
+                if( def.getBits() > 0 ) {
+                    result = result.add( def.getBits() );
+                    continue;
+                }
+
+                // this is a variable length field: if it's been set (in which case we can compute the offset to the next one), compute and carry on...
+                if( info.set ) {
+                    result = result.add( info.length );
+                    continue;
+                }
+                // we can't know the offset, 'cause we've got an unset variable length field...
+                throw new IllegalStateException( "Tried to get offset of field after a required variable length field that has not been set" );
             }
 
-            // this is a variable length field, so let's see if it's been set...
-            if( info.length <= 0 )
-                // we can't know the offset, 'cause we've got an unset variable length field...
-                throw new IllegalStateException( "Tried to get offset of field after a variable length field that has not been set" );
+            // if we get here, we've got an unset optional field and things get a mite tricky...
 
-            // we know the actual length, so add its offset and carry on...
-            result = result.add( info.length );
         }
 
         // we can only get here if we never found the field name argument, so barf...
@@ -669,23 +751,33 @@ public class Message {
     }
 
 
+    /**
+     * Instances of this class contain the offset to a particular bit in the message's content bytes.
+     */
     private static class Offset {
         int byteOffset;
         int bitOffset;
 
-        Offset() {
-            byteOffset = 0;
-            bitOffset = 0;
-        }
 
-
-        public Offset( final int _byteOffset, final int _bitOffset ) {
+        /**
+         * Creates a new instance of this class with the given byte and bit offset.
+         *
+         * @param _byteOffset the byte offset
+         * @param _bitOffset the bit offset
+         */
+        private Offset( final int _byteOffset, final int _bitOffset ) {
             byteOffset = _byteOffset;
             bitOffset = _bitOffset;
         }
 
 
-        Offset add( final int _bitLength ) {
+        /**
+         * Creates a new instance of this class that contains the sum of this instance plus the given bit length.
+         *
+         * @param _bitLength bit length to add
+         * @return the new instance of this class with the result of the addition
+         */
+        private Offset add( final int _bitLength ) {
             int newBits = bitOffset + _bitLength;
             int byteOff = byteOffset + (newBits >>> 3);
             int bitOff = newBits & 0x7;
@@ -699,16 +791,22 @@ public class Message {
     }
 
 
+    /**
+     * Instances of this class track dynamic information about a field in a message (as opposed to the static information defined in the field type).
+     */
     private static class FieldInfo {
-        boolean set;   // true if the field has been set...
-        int length;    // actual bit length of field...
-        Offset offset;    // actual offset to MSB...
+        boolean set;    // true if the field's value has been set...
+        int length;     // actual bit length of field (relevant for variable-length fields)...
+        Offset offset;  // actual offset to MSB...
+        int optional;   // if zero, indicates required field; if negative, indicates a forbidden field; if positive contains the current optional
+                        // field nesting level
 
 
-        public FieldInfo( final boolean _set, final int _length, final Offset _offset ) {
+        public FieldInfo( final boolean _set, final int _length, final Offset _offset, final int _optional ) {
             set = _set;
             length = _length;
             offset = _offset;
+            optional = _optional;
         }
     }
 

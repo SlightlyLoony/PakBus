@@ -9,14 +9,14 @@ package com.dilatush.pakbus;
  */
 public class MessageFieldDefinition {
 
-    private final String name;                      // the name of the field...
-    private final boolean optional;                 // true if this field is optional...
+    private final String name;                  // the name of the field...
+    private final int optionalLevel;            // zero if this field is required, > zero to indicate optional section nesting level...
     private final PakBusDataType pakbusType;
 
 
-    public MessageFieldDefinition( final String _name, final PakBusDataType _pakbusType, final boolean _optional ) {
+    public MessageFieldDefinition( final String _name, final PakBusDataType _pakbusType, final int _optionalLevel ) {
         name = _name;
-        optional = _optional;
+        optionalLevel = _optionalLevel;
         pakbusType = _pakbusType;
     }
 
@@ -31,8 +31,8 @@ public class MessageFieldDefinition {
     }
 
 
-    public boolean isOptional() {
-        return optional;
+    public int getOptionalLevel() {
+        return optionalLevel;
     }
 
 

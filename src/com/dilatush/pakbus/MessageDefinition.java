@@ -5,8 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.dilatush.pakbus.PakBusDataType.*;
-
 /**
  * Instances of this class define a particular PakCtrl or BMP5 message.  This definition includes the layout of the binary packet, field locations,
  * encoded type, and mapped Java type.  Instances of this class are immutable and threadsafe.
@@ -48,8 +46,8 @@ public class MessageDefinition {
         fromName = new HashMap<>( 2 * fields.size() );
 
         // add our two common fields (MsgType and TranNbr)...
-        addField( new MessageFieldDefinition( "MsgType", Byte, false ) );
-        addField( new MessageFieldDefinition( "TranNbr", Byte, false ) );
+//        addField( new MessageFieldDefinition( "MsgType", Byte, false ) );
+//        addField( new MessageFieldDefinition( "TranNbr", Byte, false ) );
 
         // now add the given fields...
         _fields.forEach( this::addField );

@@ -72,6 +72,7 @@ public enum PakBusDataType {
     private PakBusBaseDataType base;        // base data type...
 
 
+    // constructor for a simple data type...
     PakBusDataType( final int _bits, final String _name, final int _code, final boolean _documented, final ByteOrder _order, final PakBusBaseDataType _base ) {
         bits = _bits;
         name = _name;

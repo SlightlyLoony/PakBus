@@ -83,7 +83,7 @@ public enum MessageType {
      * @param _code the message type code for the desired instance
      * @return the matching instance of this class, or null if no such instance exists
      */
-    public MessageType get( final Protocol _protocol, final int _code ) {
+    public static MessageType get( final Protocol _protocol, final int _code ) {
         return fromKey.get( new Key( _protocol, _code ) );
     }
 

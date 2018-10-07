@@ -52,12 +52,12 @@ public class MessageDefinitions {
     private void makeDeliveryFailureDef() {
         MessageType type = MessageType.DeliveryFailure;
         List<MessageFieldDefinition> fields = new ArrayList<>( 6 );
-        fields.add( new MessageFieldDefinition( "ErrCode",     Byte,  false ) );
-        fields.add( new MessageFieldDefinition( "HiProtoCode", Bits4, false ) );
-        fields.add( new MessageFieldDefinition( "DstPBAddr",   Bits12,false ) );
-        fields.add( new MessageFieldDefinition( "HopCnt",      Bits4, false ) );
-        fields.add( new MessageFieldDefinition( "SrcPBAddr",   Bits12,false ) );
-        fields.add( new MessageFieldDefinition( "MsgData",     Bytes, false ) );
+        fields.add( new MessageFieldDefinition( "ErrCode",     Byte,  0 ) );
+        fields.add( new MessageFieldDefinition( "HiProtoCode", Bits4, 0 ) );
+        fields.add( new MessageFieldDefinition( "DstPBAddr",   Bits12,0 ) );
+        fields.add( new MessageFieldDefinition( "HopCnt",      Bits4, 0 ) );
+        fields.add( new MessageFieldDefinition( "SrcPBAddr",   Bits12,0 ) );
+        fields.add( new MessageFieldDefinition( "MsgData",     Bytes, 0 ) );
         MessageDefinition def = new MessageDefinition( type, fields );
         fromType.put( type, def );
     }
@@ -66,9 +66,9 @@ public class MessageDefinitions {
     private void makeHelloTrnsReq() {
         MessageType type = MessageType.HelloTrnsReq;
         List<MessageFieldDefinition> fields = new ArrayList<>( 6 );
-        fields.add( new MessageFieldDefinition( "IsRouter",    Bool, false ) );
-        fields.add( new MessageFieldDefinition( "HopMetric",   Byte, false ) );
-        fields.add( new MessageFieldDefinition( "VerifyIntv",  UInt2,false ) );
+        fields.add( new MessageFieldDefinition( "IsRouter",    Bool, 0 ) );
+        fields.add( new MessageFieldDefinition( "HopMetric",   Byte, 0 ) );
+        fields.add( new MessageFieldDefinition( "VerifyIntv",  UInt2,0 ) );
         MessageDefinition def = new MessageDefinition( type, fields );
         fromType.put( type, def );
     }
@@ -77,9 +77,9 @@ public class MessageDefinitions {
     private void makeHelloTrnsRsp() {
         MessageType type = MessageType.HelloTrnsRsp;
         List<MessageFieldDefinition> fields = new ArrayList<>( 6 );
-        fields.add( new MessageFieldDefinition( "IsRouter",    Bool, false ) );
-        fields.add( new MessageFieldDefinition( "HopMetric",   Byte, false ) );
-        fields.add( new MessageFieldDefinition( "VerifyIntv",  UInt2,false ) );
+        fields.add( new MessageFieldDefinition( "IsRouter",    Bool, 0 ) );
+        fields.add( new MessageFieldDefinition( "HopMetric",   Byte, 0 ) );
+        fields.add( new MessageFieldDefinition( "VerifyIntv",  UInt2,0 ) );
         MessageDefinition def = new MessageDefinition( type, fields );
         fromType.put( type, def );
     }
@@ -96,7 +96,7 @@ public class MessageDefinitions {
     private void makeGetSettingsReqDef() {
         MessageType type = MessageType.GetSettingsReq;
         List<MessageFieldDefinition> fields = new ArrayList<>( 1 );
-        fields.add( new MessageFieldDefinition( "NameList",    ASCIIZ,  false ) );
+        fields.add( new MessageFieldDefinition( "NameList",    ASCIIZ,  0 ) );
         MessageDefinition def = new MessageDefinition( type, fields );
         fromType.put( type, def );
     }
