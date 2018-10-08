@@ -1,7 +1,8 @@
 package com.dilatush.pakbus.types;
 
 /**
- * Instances of this class specify a property in a composite data type constructor.  Instances of this class are immutable and threadsafe.
+ * Instances of this class specify a property in a composite data type constructor.  The name (CP) is short for "Composite Property".  Instances of
+ * this class are immutable and threadsafe.
  *
  * @author Tom Dilatush  tom@dilatush.com
  */

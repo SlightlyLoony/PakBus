@@ -1,9 +1,6 @@
 package com.dilatush.pakbus.types;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Instances of this class represent PakBus composite data types.  Composite types contain an ordered list of named properties.  Each of these named
@@ -60,5 +57,15 @@ public class CompositeDataType extends ADataType {
         // if we have a fixed length, record it...
         if( bitTotal > 0 )
             bits = bitTotal;
+    }
+
+
+    public List<CP> order() {
+        return Collections.unmodifiableList( byOrder );
+    }
+
+
+    public Map<String,CP> names() {
+        return Collections.unmodifiableMap( byName );
     }
 }

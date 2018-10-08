@@ -78,4 +78,9 @@ public abstract class ADataType implements DataType {
     public GeneralDataType generalType() {
         return generalType;
     }
+
+
+    public String toString() {
+        return name;
+    }
 }

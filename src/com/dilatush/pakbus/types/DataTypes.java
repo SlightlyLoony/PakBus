@@ -65,7 +65,7 @@ public class DataTypes {
         add( new SimpleDataType( "Sec",        12, 32, SignedInteger,      BIG_ENDIAN    ) );
         add( new SimpleDataType( "USec",       13, 48, UnsignedInteger,    BIG_ENDIAN    ) );
         add( new SimpleDataType( "Bit",         0,  1, UnsignedInteger, null   ) );
-        add( new SimpleDataType( "ASCII",      11,  0, String         , null   ) );
+        add( new SimpleDataType( "ASCII",      11,  8, UnsignedInteger, null   ) );
 
         // now remember some that we're gonna use...
         DataType BIT     = byName.get( "Bit"     );
@@ -128,17 +128,5 @@ public class DataTypes {
 
     static public DataType fromCode( final int _code ) {
         return ourInstance.byCode.get( _code );
-    }
-
-
-    public static void main( String[] args ) {
-
-        DataType fp2 = fromName( "FP2" );
-        DataType bits8 = fromName( "Bits8" );
-        DataType int2 = fromCode( 3 );
-        DataType nsec = fromCode( 14 );
-        DataType packet = fromName( "Packet" );
-
-        fp2.hashCode();
     }
 }

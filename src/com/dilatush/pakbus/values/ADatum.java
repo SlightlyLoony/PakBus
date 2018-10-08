@@ -1,6 +1,8 @@
 package com.dilatush.pakbus.values;
 
+import com.dilatush.pakbus.types.ArrayDataType;
 import com.dilatush.pakbus.types.DataType;
+import com.dilatush.pakbus.types.SimpleDataType;
 import com.dilatush.pakbus.util.BitBuffer;
 
 /**
@@ -10,10 +12,10 @@ import com.dilatush.pakbus.util.BitBuffer;
  */
 public abstract class ADatum implements Datum {
 
-    final private DataType type;   // the type of this datum...
+    final protected DataType type;   // the type of this datum...
 
-    private BitBuffer buffer;
-    private int size;  // the actual size of this datum, in bits, or zero if it is not yet known...
+    protected BitBuffer buffer;
+    protected int size;  // the actual size of this datum, in bits, or zero if it is not yet known...
 
 
     public ADatum( final DataType _type ) {
@@ -27,9 +29,9 @@ public abstract class ADatum implements Datum {
     }
 
 
-    public ADatum( final DataType _type, final BitBuffer _buffer ) {
-        type = _type;
-        buffer = _buffer;
+    public void finish() {
+        if( !isSet() )
+            throw new IllegalStateException( "Attempted to finish a datum whose value has not been set" );
     }
 
 
@@ -46,20 +48,6 @@ public abstract class ADatum implements Datum {
 
 
     @Override
-    public void set( final BitBuffer _bits ) {
-
-        if( _bits == null )
-            throw new IllegalArgumentException( "Required bits argument missing" );
-        if( (type.bits() != 0) && (type.bits() != _bits.capacity()) )
-            throw new IllegalStateException( "Attempted to set " + _bits.capacity() + " bits to datum with fixed length of " + size + " bits" );
-
-        buffer = _bits;
-        if( size == 0 )
-            size = _bits.capacity();
-    }
-
-
-    @Override
     public DataType type() {
         return type;
     }
@@ -68,5 +56,24 @@ public abstract class ADatum implements Datum {
     @Override
     public int size() {
         return size;
+    }
+
+
+    /**
+     * Returns a newly constructed datum appropriate for the given data type.
+     *
+     * @param _type the type of datum to construct
+     * @return the newly constructed datum
+     */
+    public Datum getNewDatum( final DataType _type ) {
+
+        if( _type == null )
+            throw new IllegalArgumentException( "Required type is missing" );
+
+        if( _type instanceof SimpleDataType )
+            return new SimpleDatum( _type );
+        else if( _type instanceof ArrayDataType )
+            return new ArrayDatum( _type );
+        return new CompositeDatum( _type );
     }
 }

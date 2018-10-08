@@ -38,8 +38,7 @@ public class BitBuffer {
         capacity = _buffer.remaining() << 3;
         limit = capacity;
         position = 0;
-        buffer = ByteBuffer.allocate( capacity );
-        buffer.put( _buffer );
+        buffer = _buffer;
     }
 
 
@@ -51,7 +50,7 @@ public class BitBuffer {
      */
     public BitBuffer( final int _capacity ) {
 
-        if( _capacity < 1 )
+        if( _capacity < 0 )
             throw new IllegalArgumentException( "Invalid capacity: " + _capacity );
 
         // calculate the byte buffer size needed to hold these bits...
@@ -136,6 +135,26 @@ public class BitBuffer {
 
 
     /**
+     * Writes the given number of bits from the source buffer to this buffer at the given destination address.
+     *
+     * @param _dstAddr the address to write the first of the given bits to
+     * @param _srcBuffer the buffer containing the bits to write
+     * @param _bits the number of sequential bits to write
+     * @throws IndexOutOfBoundsException if _dstAddr is less than zero, or greater than or equal to this buffer's limit, or if the _srcAddr
+     *         is less than zero, or greater than or equal to the _srcBuffer's limit.
+     * @throws BufferOverflowException if this buffer's capacity is insufficient to write _bits at _dstAddr
+     * @throws BufferUnderflowException if _srcBuffer's capacity is insufficient to read _bits at _srcAddr
+     */
+    public void put( final BitAddress _dstAddr, final BitBuffer _srcBuffer, final int _bits ) {
+
+        put( _dstAddr, _srcBuffer, new BitAddress( _srcBuffer.position ), _bits );
+
+        // update the source position...
+        _srcBuffer.adjustPosition( _bits );
+    }
+
+
+    /**
      * Writes all remaining bits in the source buffer to this buffer at the given destination address.
      *
      * @param _dstAddr the address to write the first of the given bits to
@@ -156,6 +175,28 @@ public class BitBuffer {
 
 
     /**
+     * Writes the given number of bits from the source buffer to this buffer at the current position.
+     *
+     * @param _srcBuffer the buffer containing the bits to write
+     * @param _bits the number of sequential bits to write
+     * @throws IndexOutOfBoundsException if _dstAddr is less than zero, or greater than or equal to this buffer's limit, or if the _srcAddr
+     *         is less than zero, or greater than or equal to the _srcBuffer's limit.
+     * @throws BufferOverflowException if this buffer's capacity is insufficient to write _bits at _dstAddr
+     * @throws BufferUnderflowException if _srcBuffer's capacity is insufficient to read _bits at _srcAddr
+     */
+    public void put( final BitBuffer _srcBuffer, final int _bits ) {
+
+        // first copy the bits...
+        put( new BitAddress( position ), _srcBuffer, new BitAddress( _srcBuffer.position ), _bits );
+
+        // then update the source and destination positions...
+        _srcBuffer.adjustPosition( _bits );
+        adjustPosition( _bits );
+        if( limit < position ) limit = position;
+    }
+
+
+    /**
      * Writes all remaining bits in the source buffer to this buffer at the current position.
      *
      * @param _srcBuffer the buffer containing the bits to write
@@ -165,6 +206,12 @@ public class BitBuffer {
      * @throws BufferUnderflowException if _srcBuffer's capacity is insufficient to read _bits at _srcAddr
      */
     public void put( final BitBuffer _srcBuffer ) {
+
+        if( _srcBuffer == null )
+            throw new IllegalArgumentException( "Required source buffer parameter is missing" );
+
+        if( _srcBuffer.remaining() == 0 )
+            return;
 
         // first copy the bits...
         int bits = _srcBuffer.remaining();
@@ -260,6 +307,29 @@ public class BitBuffer {
 
 
     /**
+     * Reads the given number of bits from this buffer from its current position, and returns them in a new bit buffer.
+     *
+     * @param _bits the number of sequential bits to write
+     * @return the new bit buffer containing the bits read
+     * @throws IndexOutOfBoundsException if _srcAddr is less than zero, or greater than or equal to this buffer's limit
+     * @throws BufferUnderflowException if this buffer's capacity is insufficient to read _bits at _srcAddr
+     */
+    public BitBuffer get( final int _bits ) {
+
+        // sanity checks...
+        if( _bits < 0 )
+            throw new IllegalArgumentException( "Number of bits is invalid: " + _bits );
+
+        BitBuffer result = new BitBuffer( _bits );
+        copyBits( result, ZERO, this, new BitAddress( position ), _bits );
+
+        adjustPosition( _bits );
+
+        return result;
+    }
+
+
+    /**
      * Reads the remaining bits from this buffers, and returns them in a new bit buffer.
      *
      * @return the new bit buffer containing the bits read
@@ -270,6 +340,9 @@ public class BitBuffer {
 
         BitBuffer result = new BitBuffer( remaining() );
         copyBits( result, ZERO, this, new BitAddress( position ), remaining() );
+
+        adjustPosition( remaining() );
+
         return result;
     }
 
@@ -432,6 +505,12 @@ public class BitBuffer {
             srcAddr = srcAddr.add( fitBits );
             dstAddr = dstAddr.add( fitBits );
         }
+    }
+
+
+    public void flip() {
+        limit = position;
+        position = 0;
     }
 
 
