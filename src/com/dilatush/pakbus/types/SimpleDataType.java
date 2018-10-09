@@ -11,7 +11,7 @@ import java.nio.ByteOrder;
 public class SimpleDataType extends ADataType {
 
 
-    public SimpleDataType( final String _name, final int _code, final int _bits, final GeneralDataType _generalType, final ByteOrder _byteOrder ) {
-        super( _name, _code, _bits, _generalType, _byteOrder );
+    public SimpleDataType( final String _name, final PakBusType _pakBusType, final int _bits, final GeneralDataType _generalType, final ByteOrder _byteOrder ) {
+        super( _name, _pakBusType, _bits, _generalType, _byteOrder );
     }
 }

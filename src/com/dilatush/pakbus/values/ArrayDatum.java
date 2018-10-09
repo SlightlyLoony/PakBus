@@ -2,13 +2,13 @@ package com.dilatush.pakbus.values;
 
 import com.dilatush.pakbus.types.ArrayDataType;
 import com.dilatush.pakbus.types.DataType;
+import com.dilatush.pakbus.types.DataTypes;
 import com.dilatush.pakbus.util.BitBuffer;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-
-import static com.dilatush.pakbus.util.Transformer.fromInt;
-import static com.dilatush.pakbus.util.Transformer.toInt;
 
 /**
  * Instances of this class represent an array datum, containing an array of datum elements of identical type.  There are three different kinds of
@@ -37,7 +37,7 @@ public class ArrayDatum extends ADatum {
         if( arrayType.isFixedLength() ) {
             array = new ArrayList<>( arrayType.getLength() );
             for( int i = 0; i < arrayType.getLength(); i++ ) {
-                Datum datum = getNewDatum( arrayType.getItemType() );
+                Datum datum = Datum.from( arrayType.getItemType() );
                 array.add( datum );
             }
             terminator = null;
@@ -50,7 +50,7 @@ public class ArrayDatum extends ADatum {
         // set our terminator, if we have one...
         if( arrayType.getTerminatorType() != null ) {
             terminator = new SimpleDatum( arrayType.getTerminatorType() );
-            fromInt( 0, terminator );
+            terminator.setTo( 0 );
         }
         else
             terminator = null;
@@ -162,7 +162,6 @@ public class ArrayDatum extends ADatum {
             }
         }
 
-
         // zero-terminated arrays...
         else if( arrayType.getTerminatorType() != null ) {
 
@@ -173,12 +172,12 @@ public class ArrayDatum extends ADatum {
                 int oldPosition = _buffer.position();
                 Datum term = new SimpleDatum( arrayType.getTerminatorType() );
                 term.set( _buffer );
-                if( toInt( term ) == 0 )
+                if( term.getAsInt() == 0 )
                     break;
                 _buffer.position( oldPosition );  // rewind back to the point where we tried to read the terminator...
 
                 // not terminated yet, so add a new element...
-                Datum element = getNewDatum( arrayType.getItemType() );
+                Datum element = Datum.from( arrayType.getItemType() );
                 element.set( _buffer );
                 element.finish();
                 add( element );
@@ -192,7 +191,7 @@ public class ArrayDatum extends ADatum {
             while( _buffer.remaining() > 0 ) {
 
                 // add a new element...
-                Datum element = getNewDatum( arrayType.getItemType() );
+                Datum element = Datum.from( arrayType.getItemType() );
                 element.set( _buffer );
                 element.finish();
                 add( element );
@@ -201,5 +200,127 @@ public class ArrayDatum extends ADatum {
 
         // automatically finish this thing...
         finish();
+    }
+
+
+    /**
+     * Sets the value of this datum to the given string.  This setter works on a datum of any character or string type (i.e., ASCII or arrays of
+     * ASCII). Invoking this method on a datum of any other type will throw an exception.  If this datum is a fixed-length type, then the given string
+     * must exactly match the length, or an exception will be thrown.  Note that the string will be encoded as UTF-8, which is compatible with
+     * US-ASCII but allows Unicode characters.
+     *
+     * @param _value the string value to set this datum to
+     */
+    @Override
+    public void setTo( final String _value ) {
+
+        // sanity checks...
+        if( isSet() )
+            throw new IllegalStateException( "Attempted to set a datum that's already set" );
+        if( _value == null )
+            throw new IllegalArgumentException( "String argument is missing" );
+        boolean isString = (arrayType.getItemType() == DataTypes.fromName( "ASCII" ) );
+        if( !isString )
+            throw new IllegalStateException( "Attempted to set a non-string array datum to a string" );
+
+        // some setup...
+        byte[] strBytes = _value.getBytes( StandardCharsets.UTF_8 );
+
+        // sanity check...
+        if( arrayType.isFixedLength() && (elements() != strBytes.length) )
+            throw new IllegalArgumentException( "Attempted to write " + strBytes.length + " byte string to "
+                    + elements() + " character long fixed ASCII array" );
+
+        // get the bits we need to set the array...
+        ByteBuffer bb = ByteBuffer.allocate( strBytes.length + (arrayType.isZeroTerminated() ? 1 : 0) );
+        bb.put( strBytes );
+        bb.flip();
+        bb.limit( bb.capacity() );
+        BitBuffer bits = new BitBuffer( bb );
+
+        // then just set our array and we're done...
+        set( bits );
+    }
+
+
+    /**
+     * Returns the value of this datum as a string value.  This getter works on a datum of any character or string type (i.e., ASCII or arrays of
+     * ASCII). Invoking this method on a datum of any other type will throw an exception.  Note that this datum will be decoded as UTF-8, which is
+     * compatible with US-ASCII but allows Unicode characters.
+     *
+     * @return the value of this datum as a string
+     */
+    @Override
+    public String getAsString() {
+
+        // sanity checks...
+        if( !isSet() )
+            throw new IllegalStateException( "Attempted to get string from unset datum" );
+
+        // if we don't have an array of ASCII characters, we've got a problem...
+        boolean isString = (arrayType.getItemType() == DataTypes.fromName( "ASCII" ) );
+        if( !isString )
+            throw new IllegalStateException( "Attempted to get string from a datum that is not a string" );
+
+        // we're good, so handle them...
+        StringBuilder sb = new StringBuilder();
+        for( int i = 0; i < elements(); i++ ) {
+            Datum id = get( i );
+            char c = (char)id.getAsShort();
+            if( c != 0)
+                sb.append( c );
+        }
+        return sb.toString();
+    }
+
+
+    /**
+     * Sets the value of this datum to the given boolean.  This setter works on a simple datum of any boolean or integer type.  Invoking this method
+     * on any array datum, composite datum, or simple datum that is not a boolean or integer type will throw an exception.  For integer types, a value
+     * of false will be set as a zero, and a value of true will be set as a one.
+     *
+     * @param _value the boolean value to set this datum to.
+     */
+    @Override
+    public void setTo( final boolean _value ) {
+        throw new UnsupportedOperationException( "Attempted to set boolean value on array datum" );
+    }
+
+
+    /**
+     * Returns the value of this datum as a boolean value.  This getter works on a simple datum of any boolean or integer type.  Invoking this method
+     * on any array datum, composite datum, or simple datum that is not a boolean or integer type will throw an exception.  For integer types, a value
+     * of zero will be returned as false, and any other value will be returned as true.
+     *
+     * @return the value of this datum as a boolean
+     */
+    @Override
+    public boolean getAsBoolean() {
+        throw new UnsupportedOperationException( "Attempted to get boolean value from array datum" );
+    }
+
+
+    /**
+     * Sets the value of this datum to the given double.  This setter works on any simple datum of any integer or float type.  Invoking this method on
+     * a datum of any other type will throw an exception.  Depending on this datum's type, the resulting value may be out of range (which will throw
+     * an exception) or may lose precision (because the PakBus type is less precise than a double).  When setting integer values with this method, the
+     * double value will first be rounded to the nearest integer.
+     *
+     * @param _value the double value to set this datum to
+     */
+    @Override
+    public void setTo( final double _value ) {
+        throw new UnsupportedOperationException( "Attempted to set double value on array datum" );
+    }
+
+
+    /**
+     * Returns the value of this datum as a double.  This getter works on any simple datum of any integer or float type.  Invoking this method on a
+     * datum of any other type will throw an exception.  Depending on this datum's type, the returned value may be out of range (which will throw an
+     * exception).
+     */
+    @Override
+    public double getAsDouble() {
+        throw new UnsupportedOperationException( "Attempted to get double value from array datum" );
     }
 }

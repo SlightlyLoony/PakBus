@@ -1,5 +1,7 @@
 package com.dilatush.pakbus;
 
+import com.dilatush.pakbus.types.PakBusType;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
@@ -7,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.dilatush.pakbus.PakBusBaseDataType.*;
-import static com.dilatush.pakbus.PakBusDataType.*;
+import static com.dilatush.pakbus.types.PakBusType.*;
 
 /**
  * Instances of this class represent a PakCtrl or BMP5 message.  There are no individual classes for each of the many message types, which have
@@ -519,7 +521,7 @@ public class Message {
 
         // we have two possibly correct field data types here: Bytes and BytesZ.  The first must be the last field in a message; the second
         // may appear anywhere...
-        PakBusDataType type = def.getPakbusType();
+        PakBusType type = def.getPakbusType();
         boolean isLast = (def == definition.get( definition.size() - 1 ));
         if( (type != Bytes) && (type != BytesZ) )
             throw new IllegalArgumentException( "Attempting to store bytes to a field whose type is "

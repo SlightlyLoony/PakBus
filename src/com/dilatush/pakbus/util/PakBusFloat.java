@@ -1,4 +1,6 @@
-package com.dilatush.pakbus;
+package com.dilatush.pakbus.util;
+
+import com.dilatush.pakbus.types.PakBusType;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -19,7 +21,7 @@ public class PakBusFloat {
      * @param _type the PakBus floating data type to convert to
      * @return the buffer with the converted result
      */
-    public static ByteBuffer toPakBusFloat( final double _n, final PakBusDataType _type ) {
+    public static BitBuffer toPakBusFloat( final double _n, final PakBusType _type ) {
 
         // sanity check...
         if( _type == null )
@@ -28,11 +30,11 @@ public class PakBusFloat {
         // different strokes for different folks (or floating types)...
         switch( _type ) {
 
-            case FP2: return toFP2( _n );
+            case FP2: return new BitBuffer( toFP2( _n ) );
 
-            case FP3: return toFP3( _n );
+            case FP3: return new BitBuffer( toFP3( _n ) );
 
-            case FP4: return toFP4( _n );
+            case FP4: return new BitBuffer( toFP4( _n ) );
 
             case IEEE4:
             case IEEE4Lsf:
@@ -41,7 +43,7 @@ public class PakBusFloat {
                 result.order( _type.getOrder() );
                 result.putFloat( (float) _n );
                 result.flip();
-                return result;
+                return new BitBuffer( result );
 
             case IEEE8:
             case IEEE8Lsf:
@@ -50,14 +52,14 @@ public class PakBusFloat {
                 result.order( _type.getOrder() );
                 result.putDouble( _n );
                 result.flip();
-                return result;
+                return new BitBuffer( result );
 
             default: throw new IllegalArgumentException( "The type argument (" + _type + ") is not a floating type" );
         }
     }
 
 
-    public static double fromPakBusFloat( final ByteBuffer _buffer, final PakBusDataType _type ) {
+    public static double fromPakBusFloat( final ByteBuffer _buffer, final PakBusType _type ) {
 
         // sanity check...
         if( (_buffer == null) || (_type == null) )

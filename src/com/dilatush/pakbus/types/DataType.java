@@ -3,7 +3,7 @@ package com.dilatush.pakbus.types;
 import java.nio.ByteOrder;
 
 /**
- * Implemented by all classes that implement PakBus data types, including composite and array types.
+ * Implemented by all classes that implement data types, including composite and array types.
  *
  * @author Tom Dilatush  tom@dilatush.com
  */
@@ -27,11 +27,11 @@ public interface DataType {
 
 
     /**
-     * Returns the PakBus data type code for this data type, or 0 if there is no PakBus-defined code.
+     * Returns the PakBus data type for this data type, or null if there is no PakBus-defined type for this data type.
      *
-     * @return the PakBus data type code for this data type
+     * @return the PakBus data type for this data type
      */
-    int code();
+    PakBusType pakBusType();
 
 
     /**

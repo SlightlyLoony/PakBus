@@ -19,12 +19,12 @@ public class ArrayDataType extends ADataType {
      * is the data type of the array's elements, and the terminator type is the data type of the terminating zero.
      *
      * @param _name the unique name of the data type
-     * @param _code the Campbell Scientific data type code, or 0 if there is none
+     * @param _pakBusType the PakBus data type equivalent to this type, or null if none
      * @param _itemType the data type for the array's elements
      * @param _terminatorType the data type for the array's terminating zero
      */
-    public ArrayDataType( final String _name, final int _code, final DataType _itemType, final DataType _terminatorType ) {
-        super( _name, _code, 0, GeneralDataType.Array, null );
+    public ArrayDataType( final String _name, final PakBusType _pakBusType, final DataType _itemType, final DataType _terminatorType ) {
+        super( _name, _pakBusType, 0, GeneralDataType.Array, null );
 
         if( (_itemType == null) || (_terminatorType == null) )
             throw new IllegalArgumentException( "Required parameters missing" );
@@ -40,12 +40,12 @@ public class ArrayDataType extends ADataType {
      * of the array's elements, and the given length is the fixed number of elements in the array.
      *
      * @param _name the unique name of the data type
-     * @param _code the Campbell Scientific data type code, or 0 if there is none
+     * @param _pakBusType the PakBus data type equivalent to this type, or null if none
      * @param _itemType the data type for the array's elements
      * @param _length the fixed number of elements in the array
      */
-    public ArrayDataType( final String _name, final int _code, final DataType _itemType, final int _length ) {
-        super( _name, _code, _length * _itemType.bits(), GeneralDataType.Array, null );
+    public ArrayDataType( final String _name, final PakBusType _pakBusType, final DataType _itemType, final int _length ) {
+        super( _name, _pakBusType, _length * _itemType.bits(), GeneralDataType.Array, null );
 
         if( _length < 1 )
             throw new IllegalArgumentException( "Length of array is invalid: " + _length );
@@ -61,11 +61,11 @@ public class ArrayDataType extends ADataType {
      * the data type of the array's elements.
      *
      * @param _name the unique name of the data type
-     * @param _code the Campbell Scientific data type code, or 0 if there is none
+     * @param _pakBusType the PakBus data type equivalent to this type, or null if none
      * @param _itemType the data type for the array's elements
      */
-    public ArrayDataType( final String _name, final int _code, final DataType _itemType ) {
-        super( _name, _code, 0, GeneralDataType.Array, null );
+    public ArrayDataType( final String _name, final PakBusType _pakBusType, final DataType _itemType ) {
+        super( _name, _pakBusType, 0, GeneralDataType.Array, null );
 
         if( _itemType == null )
             throw new IllegalArgumentException( "Required item type is missing" );

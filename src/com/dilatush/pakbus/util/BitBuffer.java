@@ -561,6 +561,26 @@ public class BitBuffer {
     }
 
 
+    /**
+     * Returns a ByteBuffer containing the bytes equivalent to the value of this buffer.  If there is not an even number of bytes in this buffer,
+     * an exception is thrown.
+     *
+     * @return a ByteBuffer containing the bytes equivalent to the value of this buffer
+     */
+    public ByteBuffer getByteBuffer() {
+
+        if( (limit & 7) != 0 )
+            throw new IllegalStateException( "Attempted to get ByteBuffer on instance without an even number of bytes" );
+
+        ByteBuffer result = ByteBuffer.allocate( limit >> 3 );
+        int oldPos = buffer.position();
+        buffer.position( 0 );
+        result.put( buffer );
+        buffer.position( oldPos );
+        return result;
+    }
+
+
     public int capacity() {
         return capacity;
     }

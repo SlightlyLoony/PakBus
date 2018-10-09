@@ -5,8 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.dilatush.pakbus.PakBusDataType.*;
-import static com.dilatush.pakbus.PakBusDataType.Byte;
+import static com.dilatush.pakbus.types.PakBusType.*;
+import static com.dilatush.pakbus.types.PakBusType.Byte;
 
 /**
  * A singleton that constructs and caches message definitions for all PakCtrl and BMP5 message types.

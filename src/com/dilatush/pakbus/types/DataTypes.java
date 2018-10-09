@@ -3,11 +3,9 @@ package com.dilatush.pakbus.types;
 import java.lang.String;
 import java.util.*;
 
-import static com.dilatush.pakbus.types.GeneralDataType.Boolean;
-import static com.dilatush.pakbus.types.GeneralDataType.Float;
 import static com.dilatush.pakbus.types.GeneralDataType.*;
-import static java.nio.ByteOrder.BIG_ENDIAN;
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static com.dilatush.pakbus.types.PakBusType.*;
+import static java.nio.ByteOrder.*;
 
 /**
  * Singleton class that provides access to all PakBus data types by name or by Campbell Scientific code.  The singleton instance of this class is
@@ -20,7 +18,7 @@ public class DataTypes {
     final private static DataTypes ourInstance = new DataTypes();
 
     final private Map<String,DataType> byName;
-    final private Map<Integer,DataType> byCode;
+    final private Map<PakBusType,DataType> byPakBusType;
 
 
     public static DataTypes getInstance() {
@@ -30,7 +28,7 @@ public class DataTypes {
 
     private DataTypes() {
         byName = Collections.synchronizedMap( new HashMap<>( 250 ) );
-        byCode = Collections.synchronizedMap( new HashMap<>( 100 ) );
+        byPakBusType = Collections.synchronizedMap( new HashMap<>( 100 ) );
         init();
     }
 
@@ -38,34 +36,34 @@ public class DataTypes {
     private void init() {
 
         // first we add our basic simple types...
-        add( new SimpleDataType( "Byte",        1,  8, UnsignedInteger, null   ) );
-        add( new SimpleDataType( "UInt2",       2, 16, UnsignedInteger,    BIG_ENDIAN    ) );
-        add( new SimpleDataType( "UInt2Lsf",   21, 16, UnsignedInteger,    LITTLE_ENDIAN ) );
-        add( new SimpleDataType( "UShort",     21, 16, UnsignedInteger,    LITTLE_ENDIAN ) );
-        add( new SimpleDataType( "UInt4",       3, 32, UnsignedInteger,    BIG_ENDIAN    ) );
-        add( new SimpleDataType( "Int1",        4,  8, SignedInteger, null     ) );
-        add( new SimpleDataType( "Int2",        5, 16, SignedInteger,      BIG_ENDIAN    ) );
-        add( new SimpleDataType( "Int2Lsf",    19, 16, SignedInteger,      LITTLE_ENDIAN ) );
-        add( new SimpleDataType( "Short",      19, 16, SignedInteger,      LITTLE_ENDIAN ) );
-        add( new SimpleDataType( "Int4",        6, 32, SignedInteger,      BIG_ENDIAN    ) );
-        add( new SimpleDataType( "Int4Lsf",     6, 32, SignedInteger,      LITTLE_ENDIAN ) );
-        add( new SimpleDataType( "Long",        6, 32, SignedInteger,      LITTLE_ENDIAN ) );
-        add( new SimpleDataType( "FP2",         7, 16, Float,              BIG_ENDIAN    ) );
-        add( new SimpleDataType( "FP3",        15, 24, Float,              BIG_ENDIAN    ) );
-        add( new SimpleDataType( "FP4",         8, 32, Float,              BIG_ENDIAN    ) );
-        add( new SimpleDataType( "IEEE4",       9, 32, Float,              BIG_ENDIAN    ) );
-        add( new SimpleDataType( "IEEE4Lsf",   24, 32, Float,              LITTLE_ENDIAN ) );
-        add( new SimpleDataType( "IEEE4L",     24, 32, Float,              LITTLE_ENDIAN ) );
-        add( new SimpleDataType( "IEEE8",      18, 64, Float,              BIG_ENDIAN    ) );
-        add( new SimpleDataType( "IEEE8Lsf",   25, 64, Float,              LITTLE_ENDIAN ) );
-        add( new SimpleDataType( "IEEE8L",     25, 64, Float,              LITTLE_ENDIAN ) );
-        add( new SimpleDataType( "Bool",       10,  8, Boolean,            BIG_ENDIAN    ) );
-        add( new SimpleDataType( "Bool2",      27, 16, Boolean,            BIG_ENDIAN    ) );
-        add( new SimpleDataType( "Bool4",      28, 32, Boolean,            BIG_ENDIAN    ) );
-        add( new SimpleDataType( "Sec",        12, 32, SignedInteger,      BIG_ENDIAN    ) );
-        add( new SimpleDataType( "USec",       13, 48, UnsignedInteger,    BIG_ENDIAN    ) );
-        add( new SimpleDataType( "Bit",         0,  1, UnsignedInteger, null   ) );
-        add( new SimpleDataType( "ASCII",      11,  8, UnsignedInteger, null   ) );
+        add(new SimpleDataType( "Byte",     Byte,      8, UnsignedInteger, null          ));
+        add(new SimpleDataType( "UInt2",    UInt2,    16, UnsignedInteger, BIG_ENDIAN    ));
+        add(new SimpleDataType( "UInt2Lsf", UInt2Lsf, 16, UnsignedInteger, LITTLE_ENDIAN ));
+        add(new SimpleDataType( "UShort",   UShort,   16, UnsignedInteger, LITTLE_ENDIAN ));
+        add(new SimpleDataType( "UInt4",    UInt4,    32, UnsignedInteger, BIG_ENDIAN    ));
+        add(new SimpleDataType( "Int1",     Int1,      8, SignedInteger,   null          ));
+        add(new SimpleDataType( "Int2",     Int2,     16, SignedInteger,   BIG_ENDIAN    ));
+        add(new SimpleDataType( "Int2Lsf",  Int2Lsf,  16, SignedInteger,   LITTLE_ENDIAN ));
+        add(new SimpleDataType( "Short",    Short,    16, SignedInteger,   LITTLE_ENDIAN ));
+        add(new SimpleDataType( "Int4",     Int4,     32, SignedInteger,   BIG_ENDIAN    ));
+        add(new SimpleDataType( "Int4Lsf",  Int4Lsf,  32, SignedInteger,   LITTLE_ENDIAN ));
+        add(new SimpleDataType( "Long",     Long,     32, SignedInteger,   LITTLE_ENDIAN ));
+        add(new SimpleDataType( "FP2",      FP2,      16, Float,           BIG_ENDIAN    ));
+        add(new SimpleDataType( "FP3",      FP3,      24, Float,           BIG_ENDIAN    ));
+        add(new SimpleDataType( "FP4",      FP4,      32, Float,           BIG_ENDIAN    ));
+        add(new SimpleDataType( "IEEE4",    IEEE4,    32, Float,           BIG_ENDIAN    ));
+        add(new SimpleDataType( "IEEE4Lsf", IEEE4Lsf, 32, Float,           LITTLE_ENDIAN ));
+        add(new SimpleDataType( "IEEE4L",   IEEE4L,   32, Float,           LITTLE_ENDIAN ));
+        add(new SimpleDataType( "IEEE8",    IEEE8,    64, Float,           BIG_ENDIAN    ));
+        add(new SimpleDataType( "IEEE8Lsf", IEEE8Lsf, 64, Float,           LITTLE_ENDIAN ));
+        add(new SimpleDataType( "IEEE8L",   IEEE8L,   64, Float,           LITTLE_ENDIAN ));
+        add(new SimpleDataType( "Bool",     Bool,      8, Boolean,         BIG_ENDIAN    ));
+        add(new SimpleDataType( "Bool2",    Bool2,    16, Boolean,         BIG_ENDIAN    ));
+        add(new SimpleDataType( "Bool4",    Bool4,    32, Boolean,         BIG_ENDIAN    ));
+        add(new SimpleDataType( "Sec",      Sec,      32, SignedInteger,   BIG_ENDIAN    ));
+        add(new SimpleDataType( "USec",     USec,     48, UnsignedInteger, BIG_ENDIAN    ));
+        add(new SimpleDataType( "Bit",      null,      1, UnsignedInteger, null          ));
+        add(new SimpleDataType( "ASCII",    ASCII,     8, UnsignedInteger, null          ));
 
         // now remember some that we're gonna use...
         DataType BIT     = byName.get( "Bit"     );
@@ -75,13 +73,14 @@ public class DataTypes {
         DataType INT4LSF = byName.get( "Int4Lsf" );
 
         // then our basic array types...
-        add( new ArrayDataType( "Bits2",  0, BIT,  2 ) );
-        add( new ArrayDataType( "Bits4",  0, BIT,  4 ) );
-        add( new ArrayDataType( "Bits12", 0, BIT, 12 ) );
-        add( new ArrayDataType( "Bool8", 17, BIT,  8 ) );
-        add( new ArrayDataType( "ASCIIZ",16, ASCII,   ASCII ) );
-        add( new ArrayDataType( "Bytes",  0, BYTE           ) );
-        add( new ArrayDataType( "BytesZ", 0, BYTE,     BYTE ) );
+        add( new ArrayDataType( "Bits2",  null,   BIT,   2     ) );
+        add( new ArrayDataType( "Bits4",  null,   BIT,   4     ) );
+        add( new ArrayDataType( "Bits12", null,   BIT,   12    ) );
+        add( new ArrayDataType( "Bool8",  Bool8,  BIT,   8     ) );
+        add( new ArrayDataType( "ASCIIZ", ASCIIZ, ASCII, ASCII ) );
+        add( new ArrayDataType( "ASCIIs", null,   ASCII        ) );
+        add( new ArrayDataType( "Bytes",  null,   BYTE         ) );
+        add( new ArrayDataType( "BytesZ", null,   BYTE,  BYTE  ) );
 
         // now remember some that we're gonna use...
         DataType BITS2   = byName.get( "Bits2"   );
@@ -90,15 +89,15 @@ public class DataTypes {
         DataType BYTES   = byName.get( "Bytes"   );
 
         // then our basic composite types...
-        add( new CompositeDataType( "NSec", 14,
+        add( new CompositeDataType( "NSec", NSec,
                 new CP( "Seconds",     INT4    ),
                 new CP( "Nanoseconds", INT4    ) ) );
-        add( new CompositeDataType( "NSecLsf", 26,
+        add( new CompositeDataType( "NSecLsf", NSecLsf,
                 new CP( "Seconds",     INT4LSF ),
                 new CP( "Nanoseconds", INT4LSF ) ) );
 
         // a fundamental composite type: the PakBus packet...
-        add( new CompositeDataType( "Packet", 0,
+        add( new CompositeDataType( "Packet", null,
                 new CP( "LinkState",   BITS4  ),
                 new CP( "DstPhyAddr",  BITS12 ),
                 new CP( "ExpMoreCode", BITS2  ),
@@ -116,8 +115,8 @@ public class DataTypes {
         if( byName.containsKey( _type.name() ) )
             throw new IllegalArgumentException( "Duplicate DataType name: " + _type.name() );
         byName.put( _type.name(), _type );
-        if( _type.code() != 0 )
-            byCode.put( _type.code(), _type );
+        if( _type.pakBusType() != null )
+            byPakBusType.put( _type.pakBusType(), _type );
     }
 
 
@@ -126,7 +125,7 @@ public class DataTypes {
     }
 
 
-    static public DataType fromCode( final int _code ) {
-        return ourInstance.byCode.get( _code );
+    static public DataType fromPakBusType( final PakBusType _pakBusType ) {
+        return ourInstance.byPakBusType.get( _pakBusType );
     }
 }

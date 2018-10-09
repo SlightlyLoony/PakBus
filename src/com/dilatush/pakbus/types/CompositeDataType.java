@@ -18,11 +18,11 @@ public class CompositeDataType extends ADataType {
      * Creates a new instance of this class with the given name, code, and properties defined by the given specifications.
      *
      * @param _name the name of this data type
-     * @param _code the Campbell Scientific code for this data type
+     * @param _pakBusType the PakBus data type equivalent to this type, or null if none
      * @param _specs the ordered list of specifications for this type's properties
      */
-    CompositeDataType( final String _name, final int _code, final CP... _specs  ) {
-        super( _name, _code, 0, GeneralDataType.Composite, null );
+    CompositeDataType( final String _name, final PakBusType _pakBusType, final CP... _specs  ) {
+        super( _name, _pakBusType, 0, GeneralDataType.Composite, null );
 
         // sanity check...
         if( (_name == null) || (_name.length() == 0) || (_specs == null) || (_specs.length == 0) )

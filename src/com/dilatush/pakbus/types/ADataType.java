@@ -11,15 +11,16 @@ public abstract class ADataType implements DataType {
 
           protected int             bits;         // length of the data type in bits, or 0 if it is a variable length field...
     final protected String          name;         // the name of the type...
-    final protected int             code;         // the Campbell Scientific code used to indicate this type (0 if none)...
+    final protected PakBusType      pakBusType;   // the PakBus data type equivalent to this data type, or null if none...
     final protected ByteOrder       byteOrder;    // Big-Endian or Little-Endian, or null if irrelevant...
     final protected GeneralDataType generalType;  // Signed integer, float, string, etc.; null if not a simple types...
 
 
-    /*package*/ ADataType( final String _name, final int _code, final int _bits, final GeneralDataType _generalType, final ByteOrder _byteOrder ) {
+    /*package*/ ADataType( final String _name, final PakBusType _pakBusType, final int _bits, final GeneralDataType _generalType,
+                           final ByteOrder _byteOrder ) {
         bits        = _bits;
         name        = _name;
-        code        = _code;
+        pakBusType  = _pakBusType;
         byteOrder   = _byteOrder;
         generalType = _generalType;
     }
@@ -48,13 +49,13 @@ public abstract class ADataType implements DataType {
 
 
     /**
-     * Returns the PakBus data type code for this data type, or 0 if there is no PakBus-defined code.
+     * Returns the PakBus data type for this data type, or null if there is no PakBus-defined type for this data type.
      *
-     * @return the PakBus data type code for this data type
+     * @return the PakBus data type for this data type
      */
     @Override
-    public int code() {
-        return code;
+    public PakBusType pakBusType() {
+        return pakBusType;
     }
 
 
