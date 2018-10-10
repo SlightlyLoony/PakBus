@@ -1,8 +1,11 @@
 package com.dilatush.pakbus.values;
 
-import com.dilatush.pakbus.types.*;
+import com.dilatush.pakbus.types.CP;
+import com.dilatush.pakbus.types.CompositeDataType;
+import com.dilatush.pakbus.types.DataType;
 import com.dilatush.pakbus.util.BitBuffer;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,8 +19,8 @@ import java.util.Map;
 public class CompositeDatum extends ADatum {
 
     private final Map<String,Datum> props;
-    private final CompositeDataType compositeType;
-    private final List<CP> order;
+    private CompositeDataType compositeType;
+    private List<CP> order;
 
 
     public CompositeDatum( final DataType _type ) {
@@ -34,6 +37,44 @@ public class CompositeDatum extends ADatum {
 
         // create all our properties...
         order.forEach( item -> props.put( item.getName(), Datum.from( item.getType() ) ) );
+    }
+
+
+    /**
+     * Changes the type of this datum on the fly to the given type.  Any properties that have already been set in the old type will be copied over
+     * to the same property in the new type, if the new type contains them.
+     *
+     * @param _type the type of the new datum
+     */
+    protected void changeTypeTo( final CompositeDataType _type ) {
+
+        // sanity check...
+        if( _type == null )
+            throw new IllegalArgumentException( "Required type is missing" );
+
+        // save the old properties...
+        Map<String, Datum> oldProps = new HashMap<>( props );
+        List<CP> oldOrder = new ArrayList<>( order );
+
+        // initialize with the new type, just as though we'd constructed it...
+        type = _type;
+        buffer = null;
+        size = _type.bits();
+        compositeType = (CompositeDataType) type;
+        props.clear();
+        order = compositeType.order();
+        order.forEach( item -> props.put( item.getName(), Datum.from( item.getType() ) ) );
+
+        // now copy any set properties in the old type to properties with the same name and type in the new type...
+        oldOrder.forEach( item -> {
+            if( props.containsKey( item.getName() ) ) {
+                Datum oldDatum = oldProps.get( item.getName() );
+                Datum newDatum = props.get( item.getName() );
+                if( oldDatum.isSet() && (item.getType() == oldDatum.type()) ) {
+                    newDatum.set( oldDatum.get() );
+                }
+            }
+        });
     }
 
 
@@ -88,9 +129,10 @@ public class CompositeDatum extends ADatum {
         buffer = new BitBuffer( bitsNeeded );
         order.forEach( cp -> {
             Datum datum = props.get( cp.getName() );
-            if( datum.isSet() )
+            if( datum.isSet() ) {
                 buffer.put( datum.get() );
-            datum.get().flip();
+                datum.get().flip();
+            }
         } );
         buffer.flip();
 
@@ -139,18 +181,20 @@ public class CompositeDatum extends ADatum {
 
             // if we're setting an optional property, we need to constrain the bits it may use...
             if( cp.isOptional() ) {
-                int oldLimit = _buffer.limit();
-                _buffer.limit( oldLimit - bao );
-                if( _buffer.remaining() > 0 )
+                if( _buffer.remaining() > bao ) {
+                    int oldLimit = _buffer.limit();
+                    _buffer.limit( oldLimit - bao );
                     datum.set( _buffer );
-                _buffer.limit( oldLimit );
+                    datum.finish();
+                    _buffer.limit( oldLimit );
+                }
             }
 
             // otherwise, it's simpler...
-            else
+            else {
                 datum.set( _buffer );
-
-            datum.finish();
+                datum.finish();
+            }
         } );
 
         // we've set it all, so finish things up...
@@ -233,42 +277,5 @@ public class CompositeDatum extends ADatum {
     @Override
     public double getAsDouble() {
         throw new UnsupportedOperationException( "Attempted to get double value from composite datum" );
-    }
-
-
-    public static void main( String[] _args ) {
-
-        CompositeDatum pk = new CompositeDatum( DataTypes.fromName( "Packet" ) );
-        pk.at( "LinkState"   ).setTo( 10    );
-        pk.at( "DstPhyAddr"  ).setTo( 0xabc );
-        pk.at( "ExpMoreCode" ).setTo( 0     );
-        pk.at( "Priority"    ).setTo( 1     );
-        pk.at( "SrcPhyAddr"  ).setTo( 0x123 );
-        pk.at( "HiProtoCode" ).setTo( 0     );
-        pk.at( "DstNodeId"   ).setTo( 1     );
-        pk.at( "HopCnt"      ).setTo( 0     );
-        pk.at( "SrcNodeId"   ).setTo( 1     );
-        pk.at( "Message"     ).finish();
-        pk.finish();
-        BitBuffer bb = pk.get();
-
-        int srcAddr    = pk.at( "SrcPhyAddr" ).getAsInt();
-        int dstAddr    = pk.at( "DstPhyAddr" ).getAsInt();
-        byte linkState = pk.at( "LinkState"  ).getAsByte();
-
-        pk = new CompositeDatum( DataTypes.fromName( "Packet" ) );
-        pk.set( bb );
-        bb = pk.get();
-
-        ArrayDatum ad = new ArrayDatum( DataTypes.fromName( "ASCIIZ" ) );
-        ad.setTo( "This is a hamburger test of the mustard persuasion." );
-        ad.finish();
-        String adr = ad.getAsString();
-
-        SimpleDatum fp2 = new SimpleDatum( DataTypes.fromPakBusType( PakBusType.FP2 ) );
-        fp2.setTo( 12.345 );
-        double fp2r = fp2.getAsDouble();
-
-        pk.hashCode();
     }
 }

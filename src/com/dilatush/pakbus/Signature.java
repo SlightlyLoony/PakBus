@@ -20,7 +20,7 @@ public class Signature {
 
 
     /**
-     * Creates a new instance of this class using the given bytes, which must be the bytes of all the bytes in a PakBus packet BEFORE quoting and not
+     * Creates a new instance of this class using the given bytes, which must be all the bytes in a PakBus packet BEFORE quoting and not
      * including the signature nullifier.  The given ByteBuffer is assumed to contain the bytes from position zero through the limit.
      *
      * @param _bytes The bytes to compute a signature (and nullifier) for.
@@ -37,6 +37,7 @@ public class Signature {
         while( _bytes.hasRemaining() ) {
             running = forByte( _bytes.get(), running );
         }
+        _bytes.flip();
         signature = running;
 
         // now compute our nullifier...

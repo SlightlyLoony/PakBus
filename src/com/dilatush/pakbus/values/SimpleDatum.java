@@ -70,7 +70,7 @@ public class SimpleDatum extends ADatum {
         // sanity checks...
         if( isSet() )
             throw new IllegalStateException( "Attempted to set string to a datum that's already set" );
-        if( type != DataTypes.fromName( "ASCII" ) )
+        if( type != DataTypes.ASCII )
             throw new IllegalStateException( "Attempted to set string to a simple datum that's not ASCII" );
         if( _value == null )
             throw new IllegalArgumentException( "Value is missing" );
@@ -96,7 +96,7 @@ public class SimpleDatum extends ADatum {
         // sanity checks...
         if( !isSet() )
             throw new IllegalStateException( "Attempted to read character from unset datum" );
-        if( type != DataTypes.fromName( "ASCII" ) )
+        if( type != DataTypes.ASCII )
             throw new IllegalStateException( "Attempted to read character from a simple datum that's not ASCII" );
 
         // read the character code, then make a string and we're done...

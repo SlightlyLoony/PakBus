@@ -4,6 +4,9 @@ import com.dilatush.pakbus.types.DataType;
 import com.dilatush.pakbus.types.GeneralDataType;
 import com.dilatush.pakbus.util.BitBuffer;
 
+import java.nio.ByteBuffer;
+import java.util.Objects;
+
 /**
  * Abstract base class for all classes that implement Datum.
  *
@@ -11,7 +14,7 @@ import com.dilatush.pakbus.util.BitBuffer;
  */
 public abstract class ADatum implements Datum {
 
-    final protected DataType type;   // the type of this datum...
+    protected DataType type;   // the type of this datum...
 
     protected BitBuffer buffer;
     protected int size;  // the actual size of this datum, in bits, or zero if it is not yet known...
@@ -32,6 +35,23 @@ public abstract class ADatum implements Datum {
 
         if( !isSet() )
             throw new IllegalStateException( "Attempted to finish a datum whose value has not been set" );
+    }
+
+
+    @Override
+    public boolean equals( final Object _o ) {
+        if( this == _o ) return true;
+        if( _o == null || getClass() != _o.getClass() ) return false;
+        ADatum aDatum = (ADatum) _o;
+        return size == aDatum.size &&
+                Objects.equals( type, aDatum.type ) &&
+                Objects.equals( buffer, aDatum.buffer );
+    }
+
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( type, buffer, size );
     }
 
 
@@ -200,15 +220,54 @@ public abstract class ADatum implements Datum {
     }
 
 
+    /**
+     * Sets the value of this datum to the given ByteBuffer.  This setter works on any datum with a variable length, or with a fixed length that is an
+     * even number of bytes.
+     *
+     * @param _buffer the bytes to set this datum to
+     */
+    @Override
+    public void setTo( final ByteBuffer _buffer ) {
+
+        // sanity checks...
+        if( _buffer == null )
+            throw new IllegalArgumentException( "Required buffer is missing" );
+        if( isSet() )
+            throw new IllegalStateException( "Attempting to set datum that is already set" );
+        if( (type.bits() & 7) != 0 )
+            throw new IllegalStateException( "Attempting to set a fixed-length datum that is not an even number of bytes long" );
+
+        set( new BitBuffer( _buffer ) );
+    }
+
+
+    /**
+     * Returns the value of this datum as a ByteBuffer.  This getter works on any datum with a length that is an even number of bytes.
+     *
+     * @return the value of this datum as a ByteBuffer
+     */
+    @Override
+    public ByteBuffer getAsByteBuffer() {
+
+        // sanity checks...
+        if( !isSet() )
+            throw new IllegalStateException( "Attempting to read a datum that has not been set" );
+        if( (size & 7) != 0 )
+            throw new IllegalStateException( "Attempting to read a datum that is not an even number of bytes long" );
+
+        return get().getByteBuffer();
+    }
+
+
     protected void processIntegerSet( final long _value, final int _size, final int _actBits ) {
 
         // sanity checks...
         if( isSet() )
             throw new IllegalStateException( "Attempting to set datum that is already set" );
         if( size() == 0 )
-            throw new IllegalStateException( "Attempting to set variable length datum with fixed length data" );
+            throw new IllegalStateException( "Attempting to set variable-length datum with fixed length data" );
         if( _actBits > size() )
-            throw new IllegalArgumentException( "Attempting to set fixed length datum with data that's too long" );
+            throw new IllegalArgumentException( "Attempting to set fixed-length datum with data that's too long" );
 
         // sign-extend our value if necessary, then set it...
         long value = _value;

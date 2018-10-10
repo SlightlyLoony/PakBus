@@ -3,6 +3,8 @@ package com.dilatush.pakbus.values;
 import com.dilatush.pakbus.types.*;
 import com.dilatush.pakbus.util.BitBuffer;
 
+import java.nio.ByteBuffer;
+
 /**
  * Implemented by all classes that represent a PakBus datum.
  *
@@ -200,8 +202,27 @@ public interface Datum {
      * Returns the value of this datum as a double.  This getter works on any simple datum of any integer or float type.  Invoking this method on
      * a datum of any other type will throw an exception.  Depending on this datum's type, the returned value may be out of range (which will throw an
      * exception).
+     *
+     * @return the value of this datum as a double
      */
     double getAsDouble();
+
+
+    /**
+     * Sets the value of this datum to the given ByteBuffer.  This setter works on any datum with a variable length, or with a fixed length that is
+     * an even number of bytes.
+     *
+     * @param _buffer the bytes to set this datum to
+     */
+    void setTo( final ByteBuffer _buffer );
+
+
+    /**
+     * Returns the value of this datum as a ByteBuffer.  This getter works on any datum with a length that is an even number of bytes.
+     *
+     * @return the value of this datum as a ByteBuffer
+     */
+    ByteBuffer getAsByteBuffer();
 
 
     /**

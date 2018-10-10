@@ -21,7 +21,7 @@ public class CompositeDataType extends ADataType {
      * @param _pakBusType the PakBus data type equivalent to this type, or null if none
      * @param _specs the ordered list of specifications for this type's properties
      */
-    CompositeDataType( final String _name, final PakBusType _pakBusType, final CP... _specs  ) {
+    public CompositeDataType( final String _name, final PakBusType _pakBusType, final CP... _specs  ) {
         super( _name, _pakBusType, 0, GeneralDataType.Composite, null );
 
         // sanity check...

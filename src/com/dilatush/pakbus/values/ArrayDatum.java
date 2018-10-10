@@ -219,7 +219,7 @@ public class ArrayDatum extends ADatum {
             throw new IllegalStateException( "Attempted to set a datum that's already set" );
         if( _value == null )
             throw new IllegalArgumentException( "String argument is missing" );
-        boolean isString = (arrayType.getItemType() == DataTypes.fromName( "ASCII" ) );
+        boolean isString = (arrayType.getItemType() == DataTypes.ASCII );
         if( !isString )
             throw new IllegalStateException( "Attempted to set a non-string array datum to a string" );
 
@@ -258,7 +258,7 @@ public class ArrayDatum extends ADatum {
             throw new IllegalStateException( "Attempted to get string from unset datum" );
 
         // if we don't have an array of ASCII characters, we've got a problem...
-        boolean isString = (arrayType.getItemType() == DataTypes.fromName( "ASCII" ) );
+        boolean isString = (arrayType.getItemType() == DataTypes.ASCII );
         if( !isString )
             throw new IllegalStateException( "Attempted to get string from a datum that is not a string" );
 

@@ -3,6 +3,7 @@ package com.dilatush.pakbus.util;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 import static com.dilatush.pakbus.util.BitAddress.ZERO;
 
@@ -38,7 +39,9 @@ public class BitBuffer {
         capacity = _buffer.remaining() << 3;
         limit = capacity;
         position = 0;
-        buffer = _buffer;
+        buffer = ByteBuffer.allocate( _buffer.remaining() );
+        buffer.put( _buffer );
+        buffer.flip();
     }
 
 
@@ -576,6 +579,7 @@ public class BitBuffer {
         int oldPos = buffer.position();
         buffer.position( 0 );
         result.put( buffer );
+        result.flip();
         buffer.position( oldPos );
         return result;
     }
@@ -583,5 +587,23 @@ public class BitBuffer {
 
     public int capacity() {
         return capacity;
+    }
+
+
+    @Override
+    public boolean equals( final Object _o ) {
+        if( this == _o ) return true;
+        if( _o == null || getClass() != _o.getClass() ) return false;
+        BitBuffer bitBuffer = (BitBuffer) _o;
+        return capacity == bitBuffer.capacity &&
+                position == bitBuffer.position &&
+                limit == bitBuffer.limit &&
+                Objects.equals( buffer, bitBuffer.buffer );
+    }
+
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( capacity, position, limit, buffer );
     }
 }
