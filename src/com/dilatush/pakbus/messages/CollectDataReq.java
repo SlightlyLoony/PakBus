@@ -5,22 +5,24 @@ import com.dilatush.pakbus.types.CP;
 import com.dilatush.pakbus.types.CompositeDataType;
 import com.dilatush.pakbus.types.DataType;
 import com.dilatush.pakbus.util.BitBuffer;
+import com.dilatush.pakbus.values.CompositeDatum;
 
+import static com.dilatush.pakbus.Protocol.BMP5;
 import static com.dilatush.pakbus.types.DataTypes.*;
 
 /**
  * Instances of this class represent a collect data request message.  We do some tricky things here to change the type according to the collection
- * mode.  There is one operational difference: if initializing an instance via property setting (rather than decoding), then finish() must be called
- * twice: first after setting the "CollectMode" property (this will cause the underlying type to change), then another time after all properties have
- * been set.
+ * mode.  There is one operational difference: if initializing an instance via property setting (rather than decoding), then phase() must be called
+ * after setting the "CollectMode" property.  This will change the type to one appropriate for that collect mode.
  *
  * @author Tom Dilatush  tom@dilatush.com
  */
 public class CollectDataReq extends Message {
 
     // the various types we need...
-    private static ArrayDataType FIELDS = new ArrayDataType( "", null, UINT2, UINT2 );
+    private static ArrayDataType FIELDS = new ArrayDataType( "FIELDS", null, UINT2, UINT2 );
 
+    // type variant A, for collect mode 3
     private static CompositeDataType REC_A = new CompositeDataType( "REC_A", null,
             new CP( "TableNbr", UINT2 ),
             new CP( "TableDefSig", UINT2 ),
@@ -33,6 +35,7 @@ public class CollectDataReq extends Message {
             new CP( "CollectMode",  BYTE  ),
             new CP( "Specs", SPEC_A ) );
 
+    // type variant B, for collect modes 4 and 5
     private static CompositeDataType REC_B = new CompositeDataType( "REC_B", null,
             new CP( "TableNbr", UINT2 ),
             new CP( "TableDefSig", UINT2 ),
@@ -46,6 +49,7 @@ public class CollectDataReq extends Message {
             new CP( "CollectMode",  BYTE  ),
             new CP( "Specs", SPEC_B ) );
 
+    // type variant C, for collect modes 6 and 8
     private static CompositeDataType REC_C = new CompositeDataType( "REC_C", null,
             new CP( "TableNbr", UINT2 ),
             new CP( "TableDefSig", UINT2 ),
@@ -60,6 +64,7 @@ public class CollectDataReq extends Message {
             new CP( "CollectMode",  BYTE  ),
             new CP( "Specs", SPEC_C ) );
 
+    // type variant D, for collect mode 7
     private static CompositeDataType REC_D = new CompositeDataType( "REC_D", null,
             new CP( "TableNbr", UINT2 ),
             new CP( "TableDefSig", UINT2 ),
@@ -74,6 +79,7 @@ public class CollectDataReq extends Message {
             new CP( "CollectMode",  BYTE  ),
             new CP( "Specs", SPEC_D ) );
 
+    // initial type variant, when collect mode is unknown...
     private static CP[] PROPS = {
             new CP( "SecurityCode", UINT2 ),
             new CP( "CollectMode",  BYTE  ),
@@ -81,11 +87,27 @@ public class CollectDataReq extends Message {
     };
 
 
+    final static private int MSGTYPE = 0x09;
     final static private DataType TYPE = getType();
 
 
+    /**
+     * Creates a new instance of this type.  This constructor is intended for instances that will be decoded from a BitBuffer
+     * (via {@link CompositeDatum#set(BitBuffer)}).  No fields of this datum are set by this constructor.
+     */
     public CollectDataReq() {
-        super( TYPE );
+        super( TYPE, BMP5, MSGTYPE );
+    }
+
+
+    /**
+     * Creates a new instance of this type with the given transaction number.  This constructor is intended for instances
+     * that will be set via individual property setters.  This constructor will set the "MsgType" and "TranNbr" fields of this datum.
+     *
+     * @param _transactionNumber the transaction number for this datum
+     */
+    public CollectDataReq( final int _transactionNumber ) {
+        super( TYPE, BMP5, MSGTYPE, _transactionNumber );
     }
 
 
@@ -124,22 +146,12 @@ public class CollectDataReq extends Message {
 
 
     /**
-     * Informs this datum that all properties have had their data set.  Note that this method is invoked automatically at the end of a set()
-     * invocation.  Invokes finish() on all properties, then creates and sets the binary value of this array datum.  If this method is called
-     * when we still have the initial data type, then instead of actually finishing, we will read the collect mode, determine the correct type for
-     * this message, change to that type, and then re-set its values.
+     * Tells this datum to perform any intermediate phase operations required.  Most commonly this method will change its underlying type to
+     * accommodate a dependency on a previously set property.
      */
     @Override
-    public void finish() {
-
-        // if we're still using the original type, switch 'em out...
-        if( type == TYPE ) {
-            changeTypeTo( getTypeFromCollectMode( at( "CollectMode" ).getAsInt() ) );
-            return;
-        }
-
-        // otherwise, we have already switched types, so let's really finish it...
-        super.finish();
+    public void phase() {
+        changeTypeTo( getTypeFromCollectMode( at( "CollectMode" ).getAsInt() ) );
     }
 
 
@@ -150,7 +162,7 @@ public class CollectDataReq extends Message {
             case 5: return VAR_B;
             case 6: return VAR_C;
             case 7: return VAR_D;
-            case 8: return VAR_B;
+            case 8: return VAR_C;
             default: throw new IllegalStateException( "Collect mode is an invalid value: " + _collectMode );
         }
     }

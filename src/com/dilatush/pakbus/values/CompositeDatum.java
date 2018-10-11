@@ -137,8 +137,6 @@ public class CompositeDatum extends ADatum {
         buffer.flip();
 
         size = bitsNeeded;
-
-        super.finish();
     }
 
 

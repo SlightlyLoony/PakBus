@@ -38,14 +38,14 @@ public class MessageFactory {
         Message msg;
         switch( code ) {
 
-            case 0x007: msg = new GetStringSettingsReq();       break;
-            case 0x117: msg = new ClockReq();             break;
-            case 0x197: msg = new ClockRsp();             break;
-            case 0x11A: msg = new GetValuesReq();                    break;
-            case 0x19A: msg = new GetValuesRsp();                    break;
-            case 0x11D: msg = new FileUpLoadReq();                   break;
-            case 0x19D: msg = new FileUpLoadRsp();                   break;
-            case 0x109: msg = new CollectDataReq();                  break;
+            case 0x007: msg = new GetStringSettingsReq();  break;
+            case 0x117: msg = new ClockReq();              break;
+            case 0x197: msg = new ClockRsp();              break;
+            case 0x11A: msg = new GetValuesReq();          break;
+            case 0x19A: msg = new GetValuesRsp();          break;
+            case 0x11D: msg = new FileUpLoadReq();         break;
+            case 0x19D: msg = new FileUpLoadRsp();         break;
+            case 0x109: msg = new CollectDataReq();        break;
 
             default: throw new IllegalStateException( "Unknown message code: " + code );
         }

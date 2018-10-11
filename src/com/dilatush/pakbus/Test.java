@@ -114,10 +114,16 @@ public class Test {
         int p1 = msg.at( "Specs.P1", 0 ).getAsInt();
 
         // test making a collect data request by setting properties...
-        msg = new CollectDataReq();
+        msg = new CollectDataReq( 9 );
+        msg.at( "SecurityCode" ).setTo( 0 );
         msg.at( "CollectMode" ).setTo( 5 );
+        msg.phase();
+        msg.arrayAt( "Specs" ).add();
+        msg.at( "Specs.TableNbr", 0 ).setTo( 3 );
+        msg.at( "Specs.TableDefSig", 0 ).setTo( 0x4315 );
+        msg.at( "Specs.P1", 0 ).setTo( 60 );
         msg.finish();
-        msg.finish();
+        bb = msg.getAsByteBuffer();
 
         bb.hashCode();
     }

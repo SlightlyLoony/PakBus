@@ -41,6 +41,16 @@ public interface Datum {
     void set( final BitBuffer _buffer );
 
 
+    /**
+     * Tells this datum to perform any intermediate phase operations required.  Most commonly this method will change its underlying type to
+     * accommodate a dependency on a previously set property.
+     */
+    default void phase() {}
+
+
+    /**
+     * Perform any operations required in preparation for encoding this datum.
+     */
     void finish();
 
     /**
@@ -72,6 +82,20 @@ public interface Datum {
      * @return the datum at the path
      */
     Datum at( final String _path, int... _indices );
+
+
+    /**
+     * Returns the array datum at the given path and given indices to array datum(s) within that path.  The path consists of dot-separated names of
+     * composite datum properties.  If at("x") were called on a composite property with a property named "x", the datum representing that property
+     * would be returned.  If "x" was itself a composite datum, then at("x.y") would return the datum representing the property "y" on its parent
+     * property "x".  If "y" was an array datum, then at("x.y",3) would return the fourth element of it.  If that element was a composite property,
+     * then at("x.y.z",3) would return the "z" property of it.
+     *
+     * @param _path the path to the datum to be returned
+     * @param _indices the indices into any array datum(s) within the path
+     * @return the array datum at the path
+     */
+    ArrayDatum arrayAt( final String _path, int... _indices );
 
 
     /**

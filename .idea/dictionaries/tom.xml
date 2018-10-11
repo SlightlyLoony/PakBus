@@ -7,7 +7,9 @@
       <w>deframed</w>
       <w>dequote</w>
       <w>dequoted</w>
+      <w>msgtype</w>
       <w>nullifier</w>
+      <w>tblrcds</w>
     </words>
   </dictionary>
 </component>

@@ -31,13 +31,6 @@ public abstract class ADatum implements Datum {
     }
 
 
-    public void finish() {
-
-        if( !isSet() )
-            throw new IllegalStateException( "Attempted to finish a datum whose value has not been set" );
-    }
-
-
     @Override
     public boolean equals( final Object _o ) {
         if( this == _o ) return true;
@@ -121,6 +114,32 @@ public abstract class ADatum implements Datum {
 
         // and we're done...
         return current;
+    }
+
+
+    /**
+     * Returns the array datum at the given path and given indices to array datum(s) within that path.  The path consists of dot-separated names of
+     * composite datum properties.  If at("x") were called on a composite property with a property named "x", the datum representing that property
+     * would be returned.  If "x" was itself a composite datum, then at("x.y") would return the datum representing the property "y" on its parent
+     * property "x".  If "y" was an array datum, then at("x.y",3) would return the fourth element of it.  If that element was a composite property,
+     * then at("x.y.z",3) would return the "z" property of it.
+     *
+     * @param _path the path to the datum to be returned
+     * @param _indices the indices into any array datum(s) within the path
+     * @return the array datum at the path
+     */
+    @Override
+    public ArrayDatum arrayAt( final String _path, final int... _indices ) {
+
+        // get the datum at the path...
+        Datum datum = at( _path, _indices );
+
+        // if it's not an array datum, we've got a problem...
+        if( !(datum instanceof ArrayDatum) )
+            throw new IllegalArgumentException( "Given path does not resolve to an array datum: " + _path );
+
+        // we're good, so get outta here...
+        return (ArrayDatum) datum;
     }
 
 

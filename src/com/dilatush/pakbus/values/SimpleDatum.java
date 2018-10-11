@@ -105,6 +105,16 @@ public class SimpleDatum extends ADatum {
 
 
     /**
+     * Verifies that this datum has been set, in preparation for encoding.
+     */
+    public void finish() {
+
+        if( !isSet() )
+            throw new IllegalStateException( "Attempted to finish a datum whose value has not been set" );
+    }
+
+
+    /**
      * Sets the value of this datum to the given boolean.  This setter works on a simple datum of any boolean or integer type.  Invoking this method
      * on any array datum, composite datum, or simple datum that is not a boolean or integer type will throw an exception.  For integer types, a value
      * of false will be set as a zero, and a value of true will be set as a one.

@@ -78,6 +78,18 @@ public class ArrayDatum extends ADatum {
 
 
     /**
+     * Adds a new datum of the correct type as the last element of this array.  The new datum is returned.
+     *
+     * @return the new datum added to the end of this array
+     */
+    public Datum add() {
+        Datum result = Datum.from( arrayType.getItemType() );
+        array.add( result );
+        return result;
+    }
+
+
+    /**
      * Return the datum at the given index within this array.
      *
      * @param _index the index of the datum to retrieve
@@ -127,8 +139,6 @@ public class ArrayDatum extends ADatum {
         buffer.flip();
 
         size = bitsNeeded;
-
-        super.finish();
     }
 
 
