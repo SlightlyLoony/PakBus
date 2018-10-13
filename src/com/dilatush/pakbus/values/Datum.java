@@ -1,5 +1,6 @@
 package com.dilatush.pakbus.values;
 
+import com.dilatush.pakbus.NSec;
 import com.dilatush.pakbus.types.*;
 import com.dilatush.pakbus.util.BitBuffer;
 
@@ -247,6 +248,22 @@ public interface Datum {
      * @return the value of this datum as a ByteBuffer
      */
     ByteBuffer getAsByteBuffer();
+
+
+    /**
+     * Sets the value of this datum to the given time.  The datum must be a time type (Sec, USec, or NSec).
+     *
+     * @param _time the bytes to set this datum to
+     */
+    void setTo( final NSec _time );
+
+
+    /**
+     * Returns the value of this datum as a ByteBuffer.  This getter works on any datum with a length that is an even number of bytes.
+     *
+     * @return the value of this datum as NSec time
+     */
+    NSec getAsNSec();
 
 
     /**

@@ -39,6 +39,6 @@ public class PacketDatum extends CompositeDatum {
                 new CP( "ExpMoreCode", BITS2  ),
                 new CP( "Priority",    BITS2  ),
                 new CP( "SrcPhyAddr",  BITS12 ),
-                new CP( "HiLevel", HILEVEL, true ) );
+                new CP( "HiLevel",     HILEVEL, true ) );
     }
 }

@@ -53,6 +53,9 @@ public class SimpleDatum extends ADatum {
         buffer = new BitBuffer( type.bits() );
         buffer.put( _buffer, type.bits() );
         buffer.flip();
+
+        // tell any parents that we've set this child...
+        informParents();
     }
 
 

@@ -8,11 +8,11 @@ package com.dilatush.pakbus;
 public enum ExpectMore {
 
 
-    None(    0b000 ),
-    Forward( 0b001 ),
-    Neutral( 0b010 ),
-    Reverse( 0b011 ),
-    INVALID( 0b100 );
+    Last(       0b000 ),
+    ExpectMore( 0b001 ),
+    Neutral(    0b010 ),
+    Reverse(    0b011 ),
+    INVALID(    0b100 );
 
 
     private final int code;
@@ -41,8 +41,8 @@ public enum ExpectMore {
     public static ExpectMore decode( final int _value ) {
 
         switch( _value ) {
-            case 0b000: return None;
-            case 0b001: return Forward;
+            case 0b000: return Last;
+            case 0b001: return ExpectMore;
             case 0b010: return Neutral;
             case 0b011: return Reverse;
             default: return INVALID;

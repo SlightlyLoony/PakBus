@@ -17,6 +17,11 @@ public class Address {
     private final int address;
 
 
+    /**
+     * Creates a new instance of this class from the given numeric address.
+     *
+     * @param _address the numeric address to create an instance of this class from
+     */
     public Address( final int _address ) {
 
         // sanity check...
@@ -27,8 +32,43 @@ public class Address {
     }
 
 
+    /**
+     * Returns the numeric address.
+     *
+     * @return the numeric address
+     */
     public int getAddress() {
         return address;
+    }
+
+
+    /**
+     * Returns true if this address is a conventional application address.
+     *
+     * @return true if this address is a conventional application address
+     */
+    public boolean isApp() {
+        return !isDatalogger() && !isBroadcast();
+    }
+
+
+    /**
+     * Returns true if this address is a conventional datalogger address.
+     *
+     * @return true if this address is a conventional datalogger address
+     */
+    public boolean isDatalogger() {
+        return address < 4000;
+    }
+
+
+    /**
+     * Returns true if this address is the broadcast address.
+     *
+     * @return true if this address is the broadcast address
+     */
+    public boolean isBroadcast() {
+        return address == 0x0FFF;
     }
 
 

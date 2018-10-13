@@ -1,6 +1,8 @@
 package com.dilatush.pakbus.values;
 
+import com.dilatush.pakbus.NSec;
 import com.dilatush.pakbus.types.DataType;
+import com.dilatush.pakbus.types.DataTypes;
 import com.dilatush.pakbus.types.GeneralDataType;
 import com.dilatush.pakbus.util.BitBuffer;
 
@@ -18,9 +20,11 @@ public abstract class ADatum implements Datum {
 
     protected BitBuffer buffer;
     protected int size;  // the actual size of this datum, in bits, or zero if it is not yet known...
+    protected boolean childSet;  // true if any child property has been set...
+    protected Datum parent;  // a link to the parent datum (array or composite), or null if none...
 
 
-    public ADatum( final DataType _type ) {
+    protected ADatum( final DataType _type ) {
 
         if( _type == null )
             throw new IllegalArgumentException( "Required type argument is missing" );
@@ -28,6 +32,9 @@ public abstract class ADatum implements Datum {
         type = _type;
         buffer = null;
         size = _type.bits();
+
+        childSet = false;
+        parent = null;
     }
 
 
@@ -39,6 +46,18 @@ public abstract class ADatum implements Datum {
         return size == aDatum.size &&
                 Objects.equals( type, aDatum.type ) &&
                 Objects.equals( buffer, aDatum.buffer );
+    }
+
+
+    /**
+     * Sets the childSet property in all parents of this datum.
+     */
+    protected void informParents() {
+        ADatum current = (ADatum) parent;
+        while( current != null ) {
+            current.childSet = true;
+            current = (ADatum) current.parent;
+        }
     }
 
 
@@ -275,6 +294,70 @@ public abstract class ADatum implements Datum {
             throw new IllegalStateException( "Attempting to read a datum that is not an even number of bytes long" );
 
         return get().getByteBuffer();
+    }
+
+
+    /**
+     * Sets the value of this datum to the given time.  The datum must be a time type (Sec, USec, or NSec).
+     *
+     * @param _time the bytes to set this datum to
+     */
+    @Override
+    public void setTo( final NSec _time ) {
+
+        // sanity checks...
+        if( _time == null )
+            throw new IllegalArgumentException( "Required time argument missing" );
+        if( (type != DataTypes.NSEC) && (type != DataTypes.USEC) && (type != DataTypes.SEC) )
+            throw new IllegalStateException( "Attempted to set time on a non-time datum" );
+
+        if( type == DataTypes.NSEC ) {
+            at( "Seconds" ).setTo( _time.seconds );
+            at( "Nanoseconds" ).setTo( _time.nanoseconds );
+        }
+
+        else if( type == DataTypes.SEC ) {
+            setTo( _time.add( new NSec( 0, 500000000 ) ).seconds );
+        }
+
+        else { // it must be a USEC...
+            long usecs = (long)_time.seconds;
+            usecs &= 0xFFFFFFFFL;
+            usecs *= 1000000;
+            usecs += (_time.nanoseconds + 500) / 1000;
+            setTo( usecs );
+        }
+    }
+
+
+    /**
+     * Returns the value of this datum as a ByteBuffer.  This getter works on any datum with a length that is an even number of bytes.
+     *
+     * @return the value of this datum as NSec time
+     */
+    @Override
+    public NSec getAsNSec() {
+
+        // sanity checks...
+        if( !isSet() )
+            throw new IllegalStateException( "Attempting to read a datum that has not been set" );
+        if( (type != DataTypes.NSEC) && (type != DataTypes.USEC) && (type != DataTypes.SEC) )
+            throw new IllegalStateException( "Attempted to get time on a non-time datum" );
+
+        if( type == DataTypes.NSEC ) {
+            return new NSec( at( "Seconds" ).getAsInt(), at( "Nanoseconds" ).getAsInt() );
+        }
+
+        else if( type == DataTypes.SEC ) {
+            return new NSec( getAsInt(), 0 );
+        }
+
+        else { // it must be a USEC...
+            long usecs = 0xFFFFFFFFFFFFL & getAsLong();
+            int ss = (int)(usecs / 1000000);
+            int ns = (int)((usecs % 1000000) * 1000);
+            return new NSec( ss, ns );
+        }
     }
 
 

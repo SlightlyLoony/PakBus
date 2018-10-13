@@ -1,52 +1,91 @@
 package com.dilatush.pakbus;
 
+import com.dilatush.pakbus.comms.Context;
+import com.dilatush.pakbus.messages.Msg;
+import com.dilatush.pakbus.messages.MsgFactory;
 import com.dilatush.pakbus.util.BitBuffer;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Objects;
 
+import static com.dilatush.pakbus.Protocol.BMP5;
+import static com.dilatush.pakbus.Protocol.PakCtrl;
+
 /**
  * Instances of this class represent a Campbell Scientific PakBus packet, the lowest level of their datalogger communication protocol.  This class
- * provides methods to decode a PakBus packet from a data stream and to encode packets to a data stream.
+ * provides methods to decode a PakBus packet from a data stream and to encode packets to a data stream.  Instances of this class are immutable and
+ * threadsafe.
  *
  * @author Tom Dilatush  tom@dilatush.com
  */
 public class Packet {
 
-    private static final byte SYNC = (byte) 0xBD;
-    private static final byte QUOTE = (byte) 0xBC;
-    private static final int QUOTE_OFFSET = 0x20;
-    private static final int SHORTEST_POSSIBLE_PACKET = 10;
-    private static final int LONGEST_POSSIBLE_PACKET = 1010;
+    final static private byte SYNC = (byte) 0xBD;
+    final static private byte QUOTE = (byte) 0xBC;
+    final static private int QUOTE_OFFSET = 0x20;
+    final static private int SHORTEST_POSSIBLE_PACKET = 6;
+    final static private int LONGEST_POSSIBLE_PACKET = 1010;
 
-    private final PacketDatum datum;
-    private final Signature   signature;
+    final private PacketDatum datum;
+    final private Signature   signature;
+    final private Msg         message;
 
 
-    private Packet( final PacketDatum _datum, final Signature _signature ) {
+    /**
+     * Create a new instance of this class from the given datum (representing a PakBus packet) and computed signature.  If the packet contains a
+     * PakCtrl or BMP5 message, that message is also decoded.
+     *
+     * @param _datum the decoded low-level packet datum
+     * @param _message the decoded message
+     * @param _signature the computed signature
+     */
+    private Packet( final PacketDatum _datum, final Msg _message, final Signature _signature ) {
 
         datum     = _datum;
         signature = _signature;
+        message   = _message;
     }
 
 
     /**
-     * Creates a new instance of this class from the given packet datum.
+     * Creates a new instance of this class from the given message and with the given options.  The packet created is formatted to be sent from the
+     * application to a datalogger.
      *
-     * @param _datum the packet datum to create a packet from
+     * @param _message the message to create the packet for
+     * @param _options the packet options for this message
      */
-    public Packet( final PacketDatum _datum ) {
+    public Packet( final Msg _message, final PacketOptions _options ) {
 
-        // sanity check...
-        if( _datum == null )
-            throw new IllegalArgumentException( "Missing required datum argument" );
+        // sanity checks...
+        if( (_message == null) || (_options == null) )
+            throw new IllegalArgumentException( "Missing required argument" );
 
-        // get our bytes...
-        datum = _datum;
-        ByteBuffer bytes = _datum.getAsByteBuffer();
+        // some setup...
+        message = _message;
+        Context cx = _message.context();
+
+        // build our base datum (all three protocols need this)...
+        datum = new PacketDatum();
+        datum.at( "LinkState"   ).setTo( _options.state.getCode()             );
+        datum.at( "DstPhyAddr"  ).setTo( cx.dataloggerAddress().getAddress()  );
+        datum.at( "ExpMoreCode" ).setTo( _options.expectMore.getCode()        );
+        datum.at( "Priority"    ).setTo( _options.priority.getCode()          );
+        datum.at( "SrcPhyAddr"  ).setTo( cx.applicationAddress().getAddress() );
+
+        // if we have a PakCtrl or BMP5 message, we need to add some more...
+        if( (_message.protocol() == PakCtrl) || (_message.protocol() == BMP5) ) {
+
+            datum.at( "HiLevel.HiProtoCode" ).setTo( _message.protocol().getCode() );
+            datum.at( "HiLevel.DstNodeId"   ).setTo( cx.dataloggerNode()           );
+            datum.at( "HiLevel.HopCnt"      ).setTo( cx.hopCount().getHops()       );
+            datum.at( "HiLevel.SrcNodeId"   ).setTo( cx.applicationNode()          );
+            datum.at( "HiLevel.Message"     ).setTo( _message.bytes()              );
+        }
 
         // get the signature...
+        datum.finish();
+        ByteBuffer bytes = datum.getAsByteBuffer();
         signature = new Signature( bytes );
     }
 
@@ -141,37 +180,39 @@ public class Packet {
      */
     public static Packet decode( final ByteBuffer _bytes, final int _start, final int _end ) {
 
+        // sanity checks...
+        if( _bytes == null )
+            throw new IllegalArgumentException( "Missing required buffer argument" );
+        if( (_start < 0) || (_start >= _bytes.limit()) )
+            throw new IllegalArgumentException( "Start index is out of range" );
+        if( (_end <= _start) || (_end > _bytes.limit()) )
+            throw new IllegalArgumentException( "End index is out of range" );
+
         // if the length isn't a possible packet, we're outta here...
         ByteBuffer dequoted = dequote( _bytes, _start, _end );
-        if( dequoted == null )
-            return null;
         int len = dequoted.limit();
         if( (len < SHORTEST_POSSIBLE_PACKET) || (len > LONGEST_POSSIBLE_PACKET) )
-            return null;
+            throw new IllegalStateException( "Length of packet is impossible: " + len );
 
         // now check for a good signature...
         dequoted.limit( len - 2 );  // back off two bytes to leave out the signature nullifier...
         Signature signature = new Signature( dequoted );
         dequoted.limit( len );  // and put the limit back where it was...
         if( signature.getNullifier() != ( 0xFFFF & dequoted.getShort( len - 2 ) ) )
-            return null;
+            throw new IllegalStateException( "Nullifer did not match" );
 
-        try {
-            // now we'll attempt to decode the deframed and dequoted packet...
-            dequoted.position( 0 );
-            dequoted.limit( len - 2 );  // back off two bytes to leave out the signature nullifier...
-            PacketDatum datum = new PacketDatum();
-            datum.set( new BitBuffer( dequoted ) );
-            dequoted.flip();
+        // now we'll attempt to decode the deframed and dequoted packet...
+        dequoted.position( 0 );
+        dequoted.limit( len - 2 );  // back off two bytes to leave out the signature nullifier...
+        PacketDatum datum = new PacketDatum();
+        datum.set( new BitBuffer( dequoted ) );
+        dequoted.flip();
 
-            // and now at last we're ready to make our packet...
-            return new Packet( datum, signature );
-        }
+        // decode our message...
+        Msg msg = MsgFactory.from( datum );
 
-        // if anything at all goes wrong, just return a null...
-        catch( Exception _e ) {
-            return null;
-        }
+        // and now at last we're ready to make our packet...
+        return new Packet( datum, msg, signature );
     }
 
 
@@ -195,7 +236,8 @@ public class Packet {
             byte b = _bytes.get( i );
             if( b == QUOTE ) {
                 i++;
-                if( i >= _end ) return null;
+                if( i >= _end )
+                    throw new IllegalStateException( "Last byte of buffer was the quote character" );
                 b = (byte)(_bytes.get( i ) - QUOTE_OFFSET);
             }
             result.put( b );
@@ -214,6 +256,16 @@ public class Packet {
         Packet packet = (Packet) _o;
         return Objects.equals( datum, packet.datum ) &&
                 Objects.equals( signature, packet.signature );
+    }
+
+
+    /**
+     * Returns the number of bytes in this packet.
+     *
+     * @return the number of bytes in this packet
+     */
+    public int length() {
+        return (datum.size() + 7) >>> 3;
     }
 
 
@@ -253,8 +305,8 @@ public class Packet {
     }
 
 
-    public Address getDstNodeID() {
-        return new Address( datum.at( "HiLevel.DstNodeId" ).getAsInt() );
+    public int getDstNodeID() {
+        return datum.at( "HiLevel.DstNodeId" ).getAsInt();
     }
 
 
@@ -263,8 +315,8 @@ public class Packet {
     }
 
 
-    public Address getSrcNodeID() {
-        return new Address( datum.at( "HiLevel.SrcNodeId" ).getAsInt() );
+    public int getSrcNodeID() {
+        return datum.at( "HiLevel.SrcNodeId" ).getAsInt();
     }
 
 
@@ -275,5 +327,10 @@ public class Packet {
 
     public Signature getSignature() {
         return signature;
+    }
+
+
+    public Msg getMsg() {
+        return message;
     }
 }

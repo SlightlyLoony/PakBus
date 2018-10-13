@@ -11,6 +11,8 @@ import java.util.Objects;
  */
 public class HopCount {
 
+    final static public HopCount ZERO = new HopCount( 0 );
+
     private final int hops;
 
 

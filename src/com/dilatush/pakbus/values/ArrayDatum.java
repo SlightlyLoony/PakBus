@@ -37,7 +37,8 @@ public class ArrayDatum extends ADatum {
         if( arrayType.isFixedLength() ) {
             array = new ArrayList<>( arrayType.getLength() );
             for( int i = 0; i < arrayType.getLength(); i++ ) {
-                Datum datum = Datum.from( arrayType.getItemType() );
+                ADatum datum = (ADatum)Datum.from( arrayType.getItemType() );
+                datum.parent = this;
                 array.add( datum );
             }
             terminator = null;
@@ -73,7 +74,9 @@ public class ArrayDatum extends ADatum {
             throw new IllegalArgumentException( "Attempted to add a " + _element.type() + " datum to a " + arrayType.getItemType() + " array" );
 
         // all is ok, so do it...
-        array.add( _element );
+        ADatum dat = (ADatum)_element;
+        dat.parent = this;
+        array.add( dat );
     }
 
 
@@ -121,7 +124,12 @@ public class ArrayDatum extends ADatum {
             return;
 
         // first we call finish() on every array element...
-        array.forEach( Datum::finish );
+        array.forEach( item -> {
+
+            if( !item.isSet() & (item instanceof SimpleDatum) )
+                throw new IllegalStateException( "Attempted to finish array datum, but at least one array element was not set" );
+            item.finish();
+        } );
 
         // then we compute the bits needed to hold the binary value...
         int bitsNeeded = (arrayType.getTerminatorType() == null) ? 0 : arrayType.getTerminatorType().bits() ;
@@ -210,6 +218,9 @@ public class ArrayDatum extends ADatum {
 
         // automatically finish this thing...
         finish();
+
+        // tell any parents that we've set this thing...
+        informParents();
     }
 
 

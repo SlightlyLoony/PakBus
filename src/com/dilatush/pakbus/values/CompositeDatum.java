@@ -36,7 +36,11 @@ public class CompositeDatum extends ADatum {
         order = compositeType.order();
 
         // create all our properties...
-        order.forEach( item -> props.put( item.getName(), Datum.from( item.getType() ) ) );
+        order.forEach( item -> {
+            ADatum dat = (ADatum)Datum.from( item.getType() );
+            dat.parent = this;
+            props.put( item.getName(), dat );
+        } );
     }
 
 
@@ -114,7 +118,9 @@ public class CompositeDatum extends ADatum {
         // first we finish all our children that are set or required...
         order.forEach( item -> {
             Datum datum = props.get( item.getName() );
-            if( !item.isOptional() || datum.isSet() )
+            if( (!datum.isSet()) && (!item.isOptional()) && (datum instanceof SimpleDatum) )
+                throw new IllegalStateException( "Attempted to finish composite datum, but at least one property was not set" );
+            if( (!item.isOptional()) || (((ADatum)datum)).childSet )
                 datum.finish();
         } );
 
@@ -197,6 +203,9 @@ public class CompositeDatum extends ADatum {
 
         // we've set it all, so finish things up...
         finish();
+
+        // tell any parents what a bad thing we've done...
+        informParents();
     }
 
 

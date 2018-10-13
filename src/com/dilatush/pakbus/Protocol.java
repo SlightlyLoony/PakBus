@@ -1,7 +1,7 @@
 package com.dilatush.pakbus;
 
 /**
- * Represents all possible values of the higher level protocol in a PakBus packet.
+ * Represents all possible values for the protocol in a PakBus packet.
  *
  * @author Tom Dilatush  tom@dilatush.com
  */
@@ -10,7 +10,8 @@ public enum Protocol {
 
     PakCtrl( 0b00000 ),
     BMP5(    0b00001 ),
-    INVALID( 0b10000 );
+    SerPkt(  0b10000 ),
+    INVALID( 0b11111 );
 
 
     private final int code;
@@ -41,6 +42,7 @@ public enum Protocol {
         switch( _value ) {
             case 0b00000: return PakCtrl;
             case 0b00001: return BMP5;
+            case 0b10000: return SerPkt;
             default: return INVALID;
         }
     }

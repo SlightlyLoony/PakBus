@@ -60,6 +60,18 @@ public class CompositeDataType extends ADataType {
     }
 
 
+    /**
+     * Creates a new instance of this class with the given name, code, and properties defined by the given specifications.
+     *
+     * @param _name the name of this data type
+     * @param _pakBusType the PakBus data type equivalent to this type, or null if none
+     * @param _specs the ordered list of specifications for this type's properties
+     */
+    public CompositeDataType( final String _name, final PakBusType _pakBusType, final List<CP> _specs ) {
+        this( _name, _pakBusType, _specs.toArray( new CP[0] ) );
+    }
+
+
     public List<CP> order() {
         return Collections.unmodifiableList( byOrder );
     }
