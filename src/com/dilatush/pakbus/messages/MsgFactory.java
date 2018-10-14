@@ -57,6 +57,7 @@ public class MsgFactory {
 
             case 0x002: msg = new ClockNotificationMsg( bytes, cx ); break;
             case 0x209: msg = new RingMsg( cx );                     break;
+            case 0x20A: msg = new ReadyMsg( cx );                    break;
 
             default: msg = new InvalidMsg( "Unknown message selector code: " + code, null );
         }

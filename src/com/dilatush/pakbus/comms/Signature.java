@@ -1,4 +1,4 @@
-package com.dilatush.pakbus;
+package com.dilatush.pakbus.comms;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;

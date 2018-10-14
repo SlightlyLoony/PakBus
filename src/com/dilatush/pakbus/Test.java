@@ -1,7 +1,6 @@
 package com.dilatush.pakbus;
 
-import com.dilatush.pakbus.comms.Context;
-import com.dilatush.pakbus.comms.SimpleContext;
+import com.dilatush.pakbus.comms.*;
 import com.dilatush.pakbus.messages.*;
 
 import java.nio.ByteBuffer;
@@ -12,13 +11,35 @@ import java.nio.ByteBuffer;
 public class Test {
 
 
-    public static void main( String[] _args ) {
+    public static void main( String[] _args ) throws InterruptedException {
 
-        // test SerPkt protocol ring packet...
+        // some setup...
+
+        SerialTransceiver st = PortSerialTransceiver
+                .getSerialTransceiver( "/dev/cu.usbserial-AC01R521", 9600, 8,
+                        PortSerialTransceiver.STOP_BITS_ONE, PortSerialTransceiver.PARITY_NONE, PortSerialTransceiver.FLOW_CTRL_NONE );
+
+        PacketTransceiver pt = new SerialPacketTransceiver( st );
+
         Context cx = new SimpleContext( new Address(4010), new Address( 1029 ), 1, 1, HopCount.ZERO, 0 );
-        test( new RingMsg( cx ) );
-        test( new ClockNotificationMsg( NSec.now(), cx ) );
+        Context bcx = new SimpleContext( new Address(4010), Address.BROADCAST, 1, 1, HopCount.ZERO, 0 );
 
+        Msg m1 = new RingMsg( bcx );
+        Packet p1 = m1.encode();
+        pt.tx( new RawPacket( p1.encode()) );
+        Packet p2 = Packet.decode( pt.rx() );
+        Msg m2 = p2.getMsg();
+        Address src = p2.getSrcPhysAddr();
+
+        m1 = new ClockNotificationMsg( NSec.now(), cx );
+        p1 = m1.encode();
+        pt.tx( new RawPacket( p1.encode()) );
+        p2 = Packet.decode( pt.rx() );
+        m2 = p2.getMsg();
+
+        st.hashCode();
+
+        /*
         // test get settings request...
         ByteBuffer bb = getBytes( "BD AF FF 7F FE 0F FF 0F FE 07 07 50 61 6B 42 75 73 41 64 64 72 65 73 73 00 FA 01 BD" );
         Packet packet = Packet.deframeAndDecode( bb );
@@ -118,26 +139,8 @@ public class Test {
         oldmsg.at( "Specs.P1", 0 ).setTo( 60 );
         oldmsg.finish();
         bb = oldmsg.getAsByteBuffer();
+        */
 
-        bb.hashCode();
-    }
-
-
-    private static void test( final Msg _msg ) {
-
-        // first we encode the message...
-        Packet p1 = _msg.encode();
-        ByteBuffer b1 = p1.encode();
-
-        // now we decode it...
-        Packet p2 = Packet.decode( b1, 0, b1.limit() );
-
-        // then we encode the decoded packet...
-        ByteBuffer b2 = p2.encode();
-
-        // now we see if the two encoded packets are equivalent...
-        if( !b1.equals( b2 ) )
-            throw new IllegalStateException( "Message mismatch!" );
     }
 
 
@@ -152,3 +155,6 @@ public class Test {
         return result;
     }
 }
+/*
+"/dev/cu.usbserial-AC01R521"
+ */

@@ -3,8 +3,8 @@ package com.dilatush.pakbus.messages;
 import com.dilatush.pakbus.*;
 import com.dilatush.pakbus.comms.Context;
 
-import static com.dilatush.pakbus.LinkState.Ring;
-import static com.dilatush.pakbus.MessageType.Request;
+import static com.dilatush.pakbus.LinkState.Ready;
+import static com.dilatush.pakbus.MessageType.*;
 import static com.dilatush.pakbus.Protocol.SerPkt;
 
 /**
@@ -12,15 +12,15 @@ import static com.dilatush.pakbus.Protocol.SerPkt;
  *
  * @author Tom Dilatush  tom@dilatush.com
  */
-public class RingMsg extends AMsg {
+public class ReadyMsg extends AMsg {
 
     /**
      * Creates a new instance of this message (for sending) with the given context.
      *
      * @param _context the communications context to use when creating this message
      */
-    public RingMsg( final Context _context ) {
-        super( SerPkt, Ring.getCode(), Request, _context );
+    public ReadyMsg( final Context _context ) {
+        super( SerPkt, Ready.getCode(), Response, _context );
     }
 
 
@@ -33,6 +33,6 @@ public class RingMsg extends AMsg {
      */
     @Override
     public Packet encode( final PacketOptions _options ) {
-        return super.encode( new PacketOptions( LinkState.Ring, ExpectMore.Neutral, Priority.Normal ));
+        return super.encode( new PacketOptions( LinkState.Ready, ExpectMore.Neutral, Priority.Normal ));
     }
 }
