@@ -172,7 +172,7 @@ public class CompositeDatum extends ADatum {
                 foundOptional = true;
             else if( foundOptional ) {
                 if( datum.type().bits() == 0 )
-                    throw new IllegalStateException( "Attempted to set value of composite with variable-length property after an optioanl property" );
+                    throw new IllegalStateException( "Attempted to set value of composite with variable-length property after an optional property" );
                 bitsAfterOptional += datum.type().bits();
             }
         }

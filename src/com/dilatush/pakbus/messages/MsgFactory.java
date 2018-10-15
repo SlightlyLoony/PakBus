@@ -3,6 +3,11 @@ package com.dilatush.pakbus.messages;
 import com.dilatush.pakbus.*;
 import com.dilatush.pakbus.comms.Context;
 import com.dilatush.pakbus.comms.SimpleContext;
+import com.dilatush.pakbus.messages.bmp5.*;
+import com.dilatush.pakbus.messages.pakctrl.*;
+import com.dilatush.pakbus.messages.serpkt.ReadyMsg;
+import com.dilatush.pakbus.messages.serpkt.RingMsg;
+import com.dilatush.pakbus.util.Checks;
 
 import java.nio.ByteBuffer;
 
@@ -19,28 +24,28 @@ public class MsgFactory {
     /**
      * Returns the message contained in the given packet, or null if there was none.
      *
-     * @param _datum the datum for the low-level packet being decoded
+     * @param _packet the low-level packet being decoded
      * @return the message in the packet
      */
-    public static Msg from( final PacketDatum _datum ) {
+    public static Msg from( final Packet _packet ) {
 
         // sanity check...
-        if( (_datum == null) )
-            throw new IllegalArgumentException( "Required packet argument is missing" );
+        Checks.required( _packet );
 
         // some setup...
-        LinkState linkState = LinkState.decode( _datum.at( "LinkState" ).getAsInt() );
-        Protocol protocol = _datum.at( "HiLevel" ).isSet()
-                ? Protocol.decode( _datum.at( "HiLevel.HiProtoCode" ).getAsInt() )
+        PacketDatum datum = _packet.getDatum();
+        LinkState linkState = LinkState.decode( datum.at( "LinkState" ).getAsInt() );
+        Protocol protocol = datum.at( "HiLevel" ).isSet()
+                ? Protocol.decode( datum.at( "HiLevel.HiProtoCode" ).getAsInt() )
                 : SerPkt;
         ByteBuffer bytes = (protocol == SerPkt)
                 ? null
-                : _datum.at( "HiLevel.Message" ).getAsByteBuffer();
-        Address appAddr = new Address( _datum.at( "DstPhyAddr" ).getAsInt() );
-        Address logAddr = new Address( _datum.at( "SrcPhyAddr" ).getAsInt() );
-        int appNode = (protocol == SerPkt) ? 0 : _datum.at( "HiLevel.DstNodeId" ).getAsInt();
-        int logNode = (protocol == SerPkt) ? 0 : _datum.at( "HiLevel.SrcNodeId" ).getAsInt();
-        HopCount hops = (protocol == SerPkt) ? null : new HopCount( _datum.at( "HiLevel.HopCnt" ).getAsInt() );
+                : datum.at( "HiLevel.Message" ).getAsByteBuffer();
+        Address appAddr = new Address( datum.at( "DstPhyAddr" ).getAsInt() );
+        Address logAddr = new Address( datum.at( "SrcPhyAddr" ).getAsInt() );
+        int appNode = (protocol == SerPkt) ? 0 : datum.at( "HiLevel.DstNodeId" ).getAsInt();
+        int logNode = (protocol == SerPkt) ? 0 : datum.at( "HiLevel.SrcNodeId" ).getAsInt();
+        HopCount hops = (protocol == SerPkt) ? null : new HopCount( datum.at( "HiLevel.HopCnt" ).getAsInt() );
         int trnNbr = (protocol == SerPkt) ? 0 : 0xFF & bytes.get( 1 );
         Context cx = new SimpleContext( appAddr, logAddr, appNode, logNode, hops, trnNbr );
 
@@ -52,17 +57,32 @@ public class MsgFactory {
             code = ((protocol == PakCtrl) ? 0x000 : 0x100) + (0xFF & bytes.get( 0 ));
 
         // instantiate the correct type of message class...
-        Msg msg;
+        AMsg msg;
         switch( code ) {
 
-            case 0x002: msg = new ClockNotificationMsg( bytes, cx ); break;
-            case 0x209: msg = new RingMsg( cx );                     break;
-            case 0x20A: msg = new ReadyMsg( cx );                    break;
+            case 0x002: msg = new ClockNotificationMsg( bytes, cx );            break;
+            case 0x007: msg = new GetStringSettingsReqMsg( bytes, cx );         break;
+            case 0x087: msg = new GetStringSettingsRspMsg( bytes, cx );         break;
+            case 0x008: msg = new SetStringSettingsReqMsg( bytes, cx );         break;
+            case 0x088: msg = new SetStringSettingsRspMsg( bytes, cx );         break;
+            case 0x009: msg = new HelloReqMsg( bytes, cx );                     break;
+            case 0x089: msg = new HelloRspMsg( bytes, cx );                     break;
+            case 0x117: msg = new ClockReqMsg( bytes, cx );                     break;
+            case 0x197: msg = new ClockRspMsg( bytes, cx );                     break;
+            case 0x11D: msg = new FileReceiveReqMsg( bytes, cx );               break;
+            case 0x19D: msg = new FileReceiveRspMsg( bytes, cx );               break;
+            case 0x11E: msg = new FileControlReqMsg( bytes, cx );               break;
+            case 0x19E: msg = new FileControlRspMsg( bytes, cx );               break;
+            case 0x118: msg = new GetProgrammingStatisticsReqMsg( bytes, cx );  break;
+            case 0x198: msg = new GetProgrammingStatisticsRspMsg( bytes, cx );  break;
+            case 0x209: msg = new RingMsg( cx );                                break;
+            case 0x20A: msg = new ReadyMsg( cx );                               break;
 
             default: msg = new InvalidMsg( "Unknown message selector code: " + code, null );
         }
 
         // and we're done...
+        msg.setPacket( _packet );
         return msg;
     }
 }

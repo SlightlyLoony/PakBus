@@ -1,5 +1,6 @@
 package com.dilatush.pakbus.comms;
 
+import com.dilatush.pakbus.Log;
 import com.fazecast.jSerialComm.SerialPort;
 
 import java.time.Duration;
@@ -15,6 +16,8 @@ import java.util.concurrent.LinkedBlockingDeque;
  * @author Tom Dilatush  tom@dilatush.com
  */
 public class PortSerialTransceiver implements SerialTransceiver {
+
+    final static public boolean DEBUG = false;
 
     final static public int STOP_BITS_ONE            = 1;
     final static public int STOP_BITS_ONE_POINT_FIVE = 2;
@@ -312,12 +315,14 @@ public class PortSerialTransceiver implements SerialTransceiver {
 
                     // if we had an error, time to shut it all down...
                     if( result != 1 ) {
+                        if( DEBUG ) Log.log( "[read error] " );
                         PortSerialTransceiver.this.stop();
                         continue;
                     }
 
                     // we really got a byte, so mark the time and stuff it in our receive queue...
                     lastByte = Instant.now();
+                    if( DEBUG ) Log.log( "<" + Log.toHex2( buffer[0] ) + " " );
                     queue.putFirst( buffer[0] );
                 }
                 catch( InterruptedException _e ) {

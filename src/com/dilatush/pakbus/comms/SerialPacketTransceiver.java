@@ -1,5 +1,7 @@
 package com.dilatush.pakbus.comms;
 
+import com.dilatush.pakbus.Log;
+
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -14,6 +16,8 @@ import java.util.concurrent.LinkedBlockingDeque;
  */
 public class SerialPacketTransceiver implements PacketTransceiver {
 
+
+    final static private boolean DEBUG = false;
 
     final static private Duration LONG_SYNC_THRESHOLD = Duration.ofSeconds( 15 );  // time since last tx when we use a long sync instead of short...
     final static private int      SHORT_SYNC          = 3;  // number of sync bytes when we're using a short sync...
@@ -169,8 +173,10 @@ public class SerialPacketTransceiver implements PacketTransceiver {
                             packetBytes.flip();
 
                             // if it's too short to be a real packet, ignore this monstrosity...
-                            if( packetBytes.limit() < MIN_PACKET_BYTES )
+                            if( packetBytes.limit() < MIN_PACKET_BYTES ) {
+                                if( DEBUG ) Log.log( "[short packet] " );
                                 break;
+                            }
 
                             // get the signature...
                             packetBytes.limit( packetBytes.limit() - 2 );
@@ -178,11 +184,14 @@ public class SerialPacketTransceiver implements PacketTransceiver {
                             packetBytes.limit( packetBytes.limit() + 2 );
 
                             // if the nullifier doesn't match, ignore this grotesque monstrosity...
-                            if( signature.getNullifier() != packetBytes.getShort( packetBytes.limit() - 2 ) )
+                            if( ((short)signature.getNullifier()) != packetBytes.getShort( packetBytes.limit() - 2 ) ) {
+                                if( DEBUG ) Log.log( "[nullifier bad] " );
                                 break;
+                            }
 
                             // we have a good packet, so queue it up...
                             RawPacket rawPacket = new RawPacket( packetBytes, signature );
+                            if( DEBUG ) Log.log( "[good packet] " );
                             queue.putFirst( rawPacket );
 
                             break;
@@ -190,6 +199,7 @@ public class SerialPacketTransceiver implements PacketTransceiver {
 
                         // if we're out of room, we've got to end this...
                         if( packetBytes.position() == MAX_PACKET_BYTES ) {
+                            if( DEBUG ) Log.log( "[oversize packet] " );
                             waitForOutPacket();  // read bytes until we got a sync, so we're done with this packet...
                             break;
                         }
@@ -202,6 +212,7 @@ public class SerialPacketTransceiver implements PacketTransceiver {
                         }
 
                         // time to add this to our packet's bytes...
+                        if( DEBUG ) Log.log( "<<" + Log.toHex2( b ) + " " );
                         packetBytes.put( b );
 
                         // and get another one...

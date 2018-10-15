@@ -2,8 +2,14 @@ package com.dilatush.pakbus;
 
 import com.dilatush.pakbus.comms.*;
 import com.dilatush.pakbus.messages.*;
+import com.dilatush.pakbus.messages.bmp5.*;
+import com.dilatush.pakbus.messages.pakctrl.*;
+import com.dilatush.pakbus.messages.serpkt.ReadyMsg;
+import com.dilatush.pakbus.messages.serpkt.RingMsg;
 
 import java.nio.ByteBuffer;
+import java.time.Duration;
+import java.time.Instant;
 
 /**
  * @author Tom Dilatush  tom@dilatush.com
@@ -21,126 +27,74 @@ public class Test {
 
         PacketTransceiver pt = new SerialPacketTransceiver( st );
 
-        Context cx = new SimpleContext( new Address(4010), new Address( 1029 ), 1, 1, HopCount.ZERO, 0 );
+        Context cx = new SimpleContext( new Address(4010), new Address( 1027 ), 1, 1027, HopCount.ZERO, 0 );
         Context bcx = new SimpleContext( new Address(4010), Address.BROADCAST, 1, 1, HopCount.ZERO, 0 );
 
-        Msg m1 = new RingMsg( bcx );
-        Packet p1 = m1.encode();
-        pt.tx( new RawPacket( p1.encode()) );
-        Packet p2 = Packet.decode( pt.rx() );
-        Msg m2 = p2.getMsg();
-        Address src = p2.getSrcPhysAddr();
+        Msg msg = request( pt, new RingMsg( bcx ), ReadyMsg.class );
 
-        m1 = new ClockNotificationMsg( NSec.now(), cx );
-        p1 = m1.encode();
-        pt.tx( new RawPacket( p1.encode()) );
-        p2 = Packet.decode( pt.rx() );
-        m2 = p2.getMsg();
+        oneWay( pt, new ResetRouterMsg( 0, cx ) );
+
+        msg = request( pt, new ClockReqMsg( NSec.ZERO, cx ), ClockRspMsg.class );
+        Instant i = ((ClockRspMsg)msg).oldTime.asInstant();
+        Duration d = Duration.between( Instant.now(), i );
+        Log.logLn( "Clock difference: " + d.toMillis() + " milliseconds" );
+
+        msg = request( pt, new GetStringSettingsReqMsg( "", cx ), GetStringSettingsRspMsg.class );
+
+        msg = request( pt, new HelloReqMsg( 0, 10, 60, cx ), HelloRspMsg.class );
+
+        msg = request( pt, new GetProgrammingStatisticsReqMsg( 0, cx ), GetProgrammingStatisticsRspMsg.class );
+
+        ByteBuffer data = readFile( "SiteVal.TDF", pt, cx );
+
+        msg = request( pt, new FileControlReqMsg( 0, "argyle.dac", 18, "awfully.cad", cx ), FileControlRspMsg.class );
 
         st.hashCode();
+    }
 
-        /*
-        // test get settings request...
-        ByteBuffer bb = getBytes( "BD AF FF 7F FE 0F FF 0F FE 07 07 50 61 6B 42 75 73 41 64 64 72 65 73 73 00 FA 01 BD" );
-        Packet packet = Packet.deframeAndDecode( bb );
-        if( packet == null ) throw new IllegalStateException(  );
-        Message oldmsg = MessageFactory.from( packet );
-        if( oldmsg == null ) throw new IllegalStateException(  );
-        if( !"PakBusAddress".equals( oldmsg.at( "NameList" ).getAsString() ) ) throw new IllegalStateException(  );
 
-        // test clock transaction request...
-        bb = getBytes( "BD A0 01 4F FE 10 01 0F FE 17 17 00 00 00 00 00 00 00 00 00 00 B2 B3 BD" );
-        packet = Packet.deframeAndDecode( bb );
-        if( packet == null ) throw new IllegalStateException(  );
-        oldmsg = MessageFactory.from( packet );
-        if( oldmsg == null ) throw new IllegalStateException(  );
-        int sc = oldmsg.at( "SecurityCode" ).getAsInt();
-        int sec = oldmsg.at( "Adjustment.Seconds" ).getAsInt();
-        int ns  = oldmsg.at( "Adjustment.Nanoseconds" ).getAsInt();
-        if( sc + sec + ns != 0 ) throw new IllegalStateException(  );
+    private static ByteBuffer readFile( final String _fileName, final PacketTransceiver _packetTransceiver, final Context _context ) throws InterruptedException {
 
-        // test clock transaction response...
-        bb = getBytes( "BD BD AF FE 00 01 1F FE 00 01 97 17 00 1B FA 2A 61 C8 00 00 00 04 FA BD BD" );
-        packet = Packet.deframeAndDecode( bb );
-        if( packet == null ) throw new IllegalStateException(  );
-        oldmsg = MessageFactory.from( packet );
-        if( oldmsg == null ) throw new IllegalStateException(  );
-        int nss = oldmsg.at( "OldTime.Seconds" ).getAsInt();
-        int nsn = oldmsg.at( "OldTime.Nanoseconds" ).getAsInt();
+        boolean done = false;
+        int swath = 400;
+        ByteBuffer result = ByteBuffer.allocate( 1000 );
+        int offset = 0;
+        while( !done ) {
 
-        // test clock transaction response with permission denied...
-        bb = getBytes( "BD BD AF FE 00 01 1F FE 00 01 97 17 01 50 6F BD BD" );
-        packet = Packet.deframeAndDecode( bb );
-        if( packet == null ) throw new IllegalStateException(  );
-        oldmsg = MessageFactory.from( packet );
-        if( oldmsg == null ) throw new IllegalStateException(  );
-        if( oldmsg.at( "OldTime" ).isSet() ) throw new IllegalStateException(  );
+            if( result.remaining() < (swath << 1)  ) {
+                ByteBuffer bb = ByteBuffer.allocate( result.capacity() + 1000 );
+                result.flip();
+                bb.put( result );
+                result = bb;
+            }
 
-        // test get values request...
-        bb = getBytes( "BD BD BD A0 01 40 04 10 01 00 04 1A 1A 00 00 50 75 62 6C 69 63 00 09 52 48 00 00 01 2A F9 BD BD BD" );
-        packet = Packet.deframeAndDecode( bb );
-        if( packet == null ) throw new IllegalStateException(  );
-        oldmsg = MessageFactory.from( packet );
-        if( oldmsg == null ) throw new IllegalStateException(  );
-        String tn = oldmsg.at( "TableName" ).getAsString();
-        String fn = oldmsg.at( "FieldName" ).getAsString();
-        int tc = oldmsg.at( "TypeCode" ).getAsInt();
-        int sw = oldmsg.at( "Swath" ).getAsInt();
+            Msg msg = request( _packetTransceiver, new FileReceiveReqMsg( 0, _fileName, 0, offset, swath, _context ), FileReceiveRspMsg.class );
+            FileReceiveRspMsg rmsg = (FileReceiveRspMsg) msg;
+            offset += rmsg.fileData.limit();
+            result.put( rmsg.fileData );
+            if( rmsg.fileData.limit() < swath ) {
+                done = true;
+            }
+        }
+        result.flip();
+        return result;
+    }
 
-        // test get values response...
-        bb = getBytes( "BD BD BD A0 04 00 01 10 04 00 01 9A 1A 00 42 34 1C 29 69 2A BD BD BD" );
-        packet = Packet.deframeAndDecode( bb );
-        if( packet == null ) throw new IllegalStateException(  );
-        oldmsg = MessageFactory.from( packet );
-        if( oldmsg == null ) throw new IllegalStateException(  );
-        bb = oldmsg.at( "Values" ).getAsByteBuffer();
 
-        // test file upload request...
-        bb = getBytes( "BD BD BD A0 01 70 04 10 01 00 04 1D 1D 00 00 43 50 55 3A 44 65 66 2E 74 64 66 00 00 00 00 00 00 00 80 27 EA BD BD BD" );
-        packet = Packet.deframeAndDecode( bb );
-        if( packet == null ) throw new IllegalStateException(  );
-        oldmsg = MessageFactory.from( packet );
-        if( oldmsg == null ) throw new IllegalStateException(  );
-        fn = oldmsg.at( "FileName" ).getAsString();
-        int cf = oldmsg.at( "CloseFlag" ).getAsInt();
-        int fo = oldmsg.at( "FileOffset" ).getAsInt();
-        sw = oldmsg.at( "Swath" ).getAsInt();
+    private static void oneWay( final PacketTransceiver _packetTransceiver, final Msg _msg ) {
+        Packet packet = _msg.encode();
+        _packetTransceiver.tx( new RawPacket( packet.encode() ) );
+    }
 
-        // test file upload response...
-        bb = getBytes( "BD BD BD A0 04 00 01 10 04 00 01 9D 1D 00 00 00 00 00 01 53 74 61 74 75 73 00 00 00 00 01 0C " +
-                "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 8B 4F 53 76 65 72 73 69 6F 6E 00 00 00 00 00 00 00 00 01 00 00 " +
-                "00 08 00 00 00 08 00 00 00 00 8B 4F 53 44 61 74 65 00 00 00 00 00 00 00 00 01 00 00 00 0A 00 00 00 0A 00 00 00 " +
-                "00 8B 50 72 6F 67 4E 61 6D 65 00 00 00 00 00 00 00 00 01 00 00 00 10 00 00 00 10 00 00 00 00 95 50 72 6F 67 53 " +
-                "69 67 00 00 F1 67 BD BD BD" );
-        packet = Packet.deframeAndDecode( bb );
-        if( packet == null ) throw new IllegalStateException(  );
-        oldmsg = MessageFactory.from( packet );
-        if( oldmsg == null ) throw new IllegalStateException(  );
-        bb = oldmsg.at( "FileData" ).getAsByteBuffer();
 
-        // test collect data request...
-        bb = getBytes( "BD BD BD A0 01 70 04 10 01 00 04 09 09 00 00 05 00 03 43 15 00 00 00 3C 00 00 C7 DF BD BD BD" );
-        packet = Packet.deframeAndDecode( bb );
-        if( packet == null ) throw new IllegalStateException(  );
-        oldmsg = MessageFactory.from( packet );
-        if( oldmsg == null ) throw new IllegalStateException(  );
-        int cm = oldmsg.at( "CollectMode" ).getAsInt();
-        int tb = oldmsg.at( "Specs.TableNbr", 0 ).getAsInt();
-        int p1 = oldmsg.at( "Specs.P1", 0 ).getAsInt();
-
-        // test making a collect data request by setting properties...
-        oldmsg = new CollectDataReq( 9 );
-        oldmsg.at( "SecurityCode" ).setTo( 0 );
-        oldmsg.at( "CollectMode" ).setTo( 5 );
-        oldmsg.phase();
-        oldmsg.arrayAt( "Specs" ).add();
-        oldmsg.at( "Specs.TableNbr", 0 ).setTo( 3 );
-        oldmsg.at( "Specs.TableDefSig", 0 ).setTo( 0x4315 );
-        oldmsg.at( "Specs.P1", 0 ).setTo( 60 );
-        oldmsg.finish();
-        bb = oldmsg.getAsByteBuffer();
-        */
-
+    private static Msg request( final PacketTransceiver _packetTransceiver, final Msg _msg, final Class _expRsp ) throws InterruptedException {
+        Packet packet = _msg.encode();
+        _packetTransceiver.tx( new RawPacket( packet.encode() ) );
+        packet = Packet.decode( _packetTransceiver.rx() );
+        Msg msg = packet.getMsg();
+        if( !_expRsp.isInstance( msg ) )
+            throw new IllegalStateException( "Message returned is unexpected type" );
+        return msg;
     }
 
 
@@ -155,6 +109,3 @@ public class Test {
         return result;
     }
 }
-/*
-"/dev/cu.usbserial-AC01R521"
- */

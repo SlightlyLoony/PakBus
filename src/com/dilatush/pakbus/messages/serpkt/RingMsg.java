@@ -1,7 +1,8 @@
-package com.dilatush.pakbus.messages;
+package com.dilatush.pakbus.messages.serpkt;
 
 import com.dilatush.pakbus.*;
 import com.dilatush.pakbus.comms.Context;
+import com.dilatush.pakbus.messages.AMsg;
 
 import static com.dilatush.pakbus.LinkState.Ring;
 import static com.dilatush.pakbus.MessageType.Request;

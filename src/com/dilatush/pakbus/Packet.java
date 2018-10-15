@@ -36,12 +36,13 @@ public class Packet {
      * PakCtrl or BMP5 message, that message is also decoded.
      *
      * @param _datum the decoded low-level packet datum
-     * @param _message the decoded message
      */
-    private Packet( final PacketDatum _datum, final Msg _message ) {
+    private Packet( final PacketDatum _datum ) {
 
         datum     = _datum;
-        message   = _message;
+
+        // decode our message...
+        message = MsgFactory.from( this );
     }
 
 
@@ -113,11 +114,8 @@ public class Packet {
         datum.set( new BitBuffer( bytes ) );
         bytes.flip();
 
-        // decode our message...
-        Msg msg = MsgFactory.from( datum );
-
         // and now at last we're ready to make our packet...
-        return new Packet( datum, msg );
+        return new Packet( datum );
     }
 
 
@@ -198,5 +196,10 @@ public class Packet {
 
     public Msg getMsg() {
         return message;
+    }
+
+
+    public PacketDatum getDatum() {
+        return datum;
     }
 }

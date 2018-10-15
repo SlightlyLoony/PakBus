@@ -32,6 +32,7 @@ abstract public class AMsg implements Msg {
 
     protected CompositeDatum    datum;      // the datum for the message contents, if any
     protected List<CP>          props;      // the ordered list of datum properties for PakCtrl and BMP5 messages
+    protected Packet            packet;     // the packet this message was decoded from (for received messages)
 
 
     /**
@@ -154,5 +155,15 @@ abstract public class AMsg implements Msg {
     @Override
     public MessageType type() {
         return type;
+    }
+
+
+    public Packet getPacket() {
+        return packet;
+    }
+
+
+    public void setPacket( final Packet _packet ) {
+        packet = _packet;
     }
 }
