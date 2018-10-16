@@ -6,6 +6,7 @@ import com.dilatush.pakbus.messages.bmp5.*;
 import com.dilatush.pakbus.messages.pakctrl.*;
 import com.dilatush.pakbus.messages.serpkt.ReadyMsg;
 import com.dilatush.pakbus.messages.serpkt.RingMsg;
+import com.dilatush.pakbus.objects.TableDefinitions;
 
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -45,7 +46,8 @@ public class Test {
 
         msg = request( pt, new GetProgrammingStatisticsReqMsg( 0, cx ), GetProgrammingStatisticsRspMsg.class );
 
-        ByteBuffer data = readFile( "SiteVal.TDF", pt, cx );
+        ByteBuffer data = readFile( ".TDF", pt, cx );
+        TableDefinitions tds = new TableDefinitions( data );
 
         msg = request( pt, new FileControlReqMsg( 0, "argyle.dac", 18, "awfully.cad", cx ), FileControlRspMsg.class );
 
@@ -61,15 +63,18 @@ public class Test {
         int offset = 0;
         while( !done ) {
 
-            if( result.remaining() < (swath << 1)  ) {
+            Msg msg = request( _packetTransceiver, new FileReceiveReqMsg( 0, _fileName, 0, offset, swath, _context ), FileReceiveRspMsg.class );
+            FileReceiveRspMsg rmsg = (FileReceiveRspMsg) msg;
+            if( rmsg.responseCode != 0 )
+                throw new IllegalStateException( "Problem on file read" );
+
+            if( result.remaining() < rmsg.fileData.limit() ) {
                 ByteBuffer bb = ByteBuffer.allocate( result.capacity() + 1000 );
                 result.flip();
                 bb.put( result );
                 result = bb;
             }
 
-            Msg msg = request( _packetTransceiver, new FileReceiveReqMsg( 0, _fileName, 0, offset, swath, _context ), FileReceiveRspMsg.class );
-            FileReceiveRspMsg rmsg = (FileReceiveRspMsg) msg;
             offset += rmsg.fileData.limit();
             result.put( rmsg.fileData );
             if( rmsg.fileData.limit() < swath ) {

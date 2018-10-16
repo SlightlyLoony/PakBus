@@ -45,6 +45,7 @@ public class DataTypes {
 
     final public static DataType BITS2    = new ArrayDataType(  "Bits2",    null,              BIT,   2     );
     final public static DataType BITS4    = new ArrayDataType(  "Bits4",    null,              BIT,   4     );
+    final public static DataType BITS7    = new ArrayDataType(  "Bits7",    null,              BIT,   7     );
     final public static DataType BITS12   = new ArrayDataType(  "Bits12",   null,              BIT,   12    );
     final public static DataType BOOL8    = new ArrayDataType(  "Bool8",    PakBusType.Bool8,  BIT,   8     );
     final public static DataType ASCIIZ   = new ArrayDataType(  "ASCIIZ",   PakBusType.ASCIIZ, ASCII, ASCII );
