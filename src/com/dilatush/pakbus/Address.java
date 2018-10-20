@@ -72,6 +72,11 @@ public class Address {
     }
 
 
+    public String toString() {
+        return Integer.toString( address );
+    }
+
+
     @Override
     public boolean equals( final Object _o ) {
         if( this == _o ) return true;

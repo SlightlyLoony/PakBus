@@ -1,10 +1,11 @@
 package com.dilatush.pakbus;
 
+import com.dilatush.pakbus.app.Datalogger;
 import com.dilatush.pakbus.comms.Context;
 import com.dilatush.pakbus.comms.RawPacket;
 import com.dilatush.pakbus.messages.Msg;
-import com.dilatush.pakbus.messages.MsgFactory;
 import com.dilatush.pakbus.util.BitBuffer;
+import com.dilatush.pakbus.values.Datum;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -28,7 +29,7 @@ public class Packet {
     final static private int LONGEST_POSSIBLE_PACKET = 1010;
 
     final private PacketDatum datum;
-    final private Msg         message;
+//    final private Msg         message;
 
 
     /**
@@ -40,9 +41,6 @@ public class Packet {
     private Packet( final PacketDatum _datum ) {
 
         datum     = _datum;
-
-        // decode our message...
-        message = MsgFactory.from( this );
     }
 
 
@@ -60,25 +58,27 @@ public class Packet {
             throw new IllegalArgumentException( "Missing required argument" );
 
         // some setup...
-        message = _message;
         Context cx = _message.context();
 
         // build our base datum (all three protocols need this)...
+        Datalogger logger = cx.datalogger();
+        Address dstAddr = (logger == null) ? Address.BROADCAST : logger.address.address;
+        int dstNode = (logger == null) ? 0 : logger.address.nodeID;
         datum = new PacketDatum();
-        datum.at( "LinkState"   ).setTo( _options.state.getCode()             );
-        datum.at( "DstPhyAddr"  ).setTo( cx.dataloggerAddress().getAddress()  );
-        datum.at( "ExpMoreCode" ).setTo( _options.expectMore.getCode()        );
-        datum.at( "Priority"    ).setTo( _options.priority.getCode()          );
-        datum.at( "SrcPhyAddr"  ).setTo( cx.applicationAddress().getAddress() );
+        datum.at( "LinkState"   ).setTo( _options.state.getCode()                      );
+        datum.at( "DstPhyAddr"  ).setTo( dstAddr.getAddress()                          );
+        datum.at( "ExpMoreCode" ).setTo( _options.expectMore.getCode()                 );
+        datum.at( "Priority"    ).setTo( _options.priority.getCode()                   );
+        datum.at( "SrcPhyAddr"  ).setTo( cx.application().address.address.getAddress() );
 
         // if we have a PakCtrl or BMP5 message, we need to add some more...
         if( (_message.protocol() == PakCtrl) || (_message.protocol() == BMP5) ) {
 
-            datum.at( "HiLevel.HiProtoCode" ).setTo( _message.protocol().getCode() );
-            datum.at( "HiLevel.DstNodeId"   ).setTo( cx.dataloggerNode()           );
-            datum.at( "HiLevel.HopCnt"      ).setTo( cx.hopCount().getHops()       );
-            datum.at( "HiLevel.SrcNodeId"   ).setTo( cx.applicationNode()          );
-            datum.at( "HiLevel.Message"     ).setTo( _message.bytes()              );
+            datum.at( "HiLevel.HiProtoCode" ).setTo( _message.protocol().getCode()      );
+            datum.at( "HiLevel.DstNodeId"   ).setTo( dstNode                            );
+            datum.at( "HiLevel.HopCnt"      ).setTo( cx.datalogger().hopCount.getHops() );
+            datum.at( "HiLevel.SrcNodeId"   ).setTo( cx.application().address.nodeID    );
+            datum.at( "HiLevel.Message"     ).setTo( _message.bytes()                   );
         }
 
         // get the signature...
@@ -175,7 +175,8 @@ public class Packet {
 
 
     public int getDstNodeID() {
-        return datum.at( "HiLevel.DstNodeId" ).getAsInt();
+        Datum dat = datum.at( "HiLevel.DstNodeId" );
+        return dat.isSet() ? dat.getAsInt() : 0;
     }
 
 
@@ -185,7 +186,8 @@ public class Packet {
 
 
     public int getSrcNodeID() {
-        return datum.at( "HiLevel.SrcNodeId" ).getAsInt();
+        Datum dat = datum.at( "HiLevel.SrcNodeId" );
+        return dat.isSet() ? dat.getAsInt() : 0;
     }
 
 
@@ -194,12 +196,17 @@ public class Packet {
     }
 
 
-    public Msg getMsg() {
-        return message;
+    public PacketDatum getDatum() {
+        return datum;
     }
 
 
-    public PacketDatum getDatum() {
-        return datum;
+    public Node getSrcAddr() {
+        return new Node( getSrcPhysAddr(), getSrcNodeID() );
+    }
+
+
+    public Node getDstAddr() {
+        return new Node( getDstPhysAddr(), getDstNodeID() );
     }
 }

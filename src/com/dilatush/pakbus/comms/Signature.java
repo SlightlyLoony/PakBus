@@ -45,6 +45,17 @@ public class Signature {
     }
 
 
+    /**
+     * Creates a new instance of this class from the given signature, presumably as received from a datalogger.
+     *
+     * @param _signature the 16 bit signature
+     */
+    public Signature( final int _signature ) {
+        signature = _signature;
+        nullifier = computeNullifier();
+    }
+
+
     // computes the new value of the signature after adding the given byte...
     // this is adapted from code supplied by Campbell Scientific; modified mainly for clarity...
     private int forByte( final byte _byte, final int _current ) {

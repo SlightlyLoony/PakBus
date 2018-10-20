@@ -1,4 +1,4 @@
-package com.dilatush.pakbus.objects;
+package com.dilatush.pakbus.shims;
 
 import com.dilatush.pakbus.types.ArrayDataType;
 import com.dilatush.pakbus.types.CP;
@@ -17,7 +17,7 @@ import java.util.Map;
 import static com.dilatush.pakbus.types.DataTypes.*;
 
 /**
- * Instances of this class represent the tables (and fields) in a datalogger as retrieved by reading the ".TDF" virtual file from a datalogger.
+ * Instances of this class represent the table summaries in a datalogger as retrieved by reading the ".TDFS" virtual file from a datalogger.
  *
  * @author Tom Dilatush  tom@dilatush.com
  */

@@ -17,11 +17,11 @@ import static com.dilatush.pakbus.MessageType.Response;
 import static com.dilatush.pakbus.Protocol.BMP5;
 
 /**
- * Represents a BMP5 "Collect Data Response" message.
+ * Represents a BMP5 "Get Programming Statistics Response" message.
  *
  * @author Tom Dilatush  tom@dilatush.com
  */
-public class GetProgrammingStatisticsRspMsg extends AMsg {
+public class CollectDataRspMsg extends AMsg {
 
 
     final static public String FIELD_RESPONSE_CODE = "RespCode";
@@ -30,11 +30,29 @@ public class GetProgrammingStatisticsRspMsg extends AMsg {
     final public ProgrammingStatistics programmingStatistics;
 
     final static public Protocol    PROTOCOL = BMP5;
-    final static public int         CODE     = 0x89;
+    final static public int         CODE     = 0x98;
     final static public MessageType TYPE     = Response;
 
 
-    public GetProgrammingStatisticsRspMsg( final ByteBuffer _bytes, final Context _context ) {
+    public CollectDataRspMsg( final ResponseCode _responseCode, final ProgrammingStatistics _stats, final Context _context ) {
+        super( PROTOCOL, CODE, TYPE, _context );
+
+        // sanity check...
+        Checks.required( _context );
+
+        // save our parameters...
+        responseCode = _responseCode;
+        programmingStatistics = _stats;
+
+        // create and initialize our datum...
+        initDataType();
+        setDatum();
+        datum.at( FIELD_RESPONSE_CODE ).setTo( responseCode.getCode() );
+        programmingStatistics.set( datum );
+    }
+
+
+    public CollectDataRspMsg( final ByteBuffer _bytes, final Context _context ) {
         super( PROTOCOL, CODE, TYPE, _context );
 
         // sanity check...

@@ -62,4 +62,20 @@ public interface Msg {
      * @return the encoded bytes of this message
      */
     ByteBuffer bytes();
+
+
+    /**
+     * Return the packet this message was decoded from.
+     *
+     * @return the packet this message was decoded from
+     */
+    Packet getPacket();
+
+
+    /**
+     * Returns the transaction number for this message.
+     *
+     * @return the transaction number for this message
+     */
+    int transactionNumber();
 }

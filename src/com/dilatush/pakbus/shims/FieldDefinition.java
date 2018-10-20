@@ -1,10 +1,10 @@
-package com.dilatush.pakbus.objects;
+package com.dilatush.pakbus.shims;
 
 import com.dilatush.pakbus.util.Checks;
 import com.dilatush.pakbus.values.ArrayDatum;
 import com.dilatush.pakbus.values.CompositeDatum;
 
-import static com.dilatush.pakbus.objects.TableDefinitions.*;
+import static com.dilatush.pakbus.shims.TableDefinitions.*;
 
 /**
  * Instances of this class represent one of the field definitions in a table definition from a datalogger.

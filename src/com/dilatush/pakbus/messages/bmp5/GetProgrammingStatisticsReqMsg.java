@@ -59,6 +59,7 @@ public class GetProgrammingStatisticsReqMsg extends AMsg {
         datum = new CompositeDatum( getDataType() );
         datum.set( new BitBuffer( _bytes ) );
         securityCode = datum.at( FIELD_SECURITY_CODE ).getAsInt();
+        setBase();
     }
 
 

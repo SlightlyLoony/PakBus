@@ -135,6 +135,7 @@ public class FileControlReqMsg extends AMsg {
             fileName2    = datum.at( FIELD_FILE_NAME2    ).getAsString();
         else
             fileName2    = null;
+        setBase();
     }
 
 

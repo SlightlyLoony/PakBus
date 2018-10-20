@@ -1,6 +1,7 @@
-package com.dilatush.pakbus.objects;
+package com.dilatush.pakbus.shims;
 
 import com.dilatush.pakbus.NSec;
+import com.dilatush.pakbus.comms.Signature;
 import com.dilatush.pakbus.util.Checks;
 import com.dilatush.pakbus.values.ArrayDatum;
 import com.dilatush.pakbus.values.CompositeDatum;
@@ -10,7 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.dilatush.pakbus.objects.TableDefinitions.*;
+import static com.dilatush.pakbus.shims.TableDefinitions.*;
 
 /**
  * Instances of this class represent one the tables (and fields) in a datalogger as retrieved by reading a "*.TDF" file from a datalogger.
@@ -19,12 +20,13 @@ import static com.dilatush.pakbus.objects.TableDefinitions.*;
  */
 public class TableDefinition {
 
-    final public int    index;   // the 1-based index for this table
-    final public String name;
-    final public int    size;
-    final public int    timeType;
-    final public NSec   timeInto;
-    final public NSec   interval;
+    final public int       index;   // the 1-based index for this table
+    final public String    name;
+    final public int       size;
+    final public int       timeType;
+    final public NSec      timeInto;
+    final public NSec      interval;
+    final public Signature signature;
 
     final private Map<String,FieldDefinition> byName;   // field definitions by the table name
     final private List<FieldDefinition>       byNumber; // field definitions by the table number (1-based)
@@ -46,6 +48,7 @@ public class TableDefinition {
         timeType = _datum.at( FIELD_TIME_TYPE  ).getAsInt();
         timeInto = _datum.at( FIELD_TIME_INTO  ).getAsNSec();
         interval = _datum.at( FIELD_INTERVAL   ).getAsNSec();
+        signature = new Signature( _datum.getAsByteBuffer() );
 
         // now get the field definitions...
         ArrayDatum fields = (ArrayDatum)_datum.at( FIELD_FIELDS );

@@ -6,12 +6,12 @@ package com.dilatush.pakbus;
 public class Log {
 
 
-    static public void log( final String _msg ) {
+    static public synchronized void log( final String _msg ) {
         System.out.print( _msg );
     }
 
 
-    static public void logLn( final String _msg ) {
+    static public synchronized void logLn( final String _msg ) {
         System.out.println( _msg );
     }
 

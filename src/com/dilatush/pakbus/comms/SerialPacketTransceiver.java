@@ -5,6 +5,7 @@ import com.dilatush.pakbus.Log;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Instances of this class are packet transceivers that send and receive raw packets through a serial transceiver, handling framing, deframing,
@@ -109,14 +110,14 @@ public class SerialPacketTransceiver implements PacketTransceiver {
 
 
     /**
-     * Returns the next packet received from this packet transceiver, blocking until it becomes available.
+     * Returns the next packet received from this packet transceiver, blocking for up to one second until it becomes available.
      *
-     * @return the next packet received
+     * @return the next packet received, or null if none were received
      * @throws InterruptedException if interrupted while blocked
      */
     @Override
     public RawPacket rx() throws InterruptedException {
-        return reader.queue.takeLast();
+        return reader.queue.pollFirst( 1, TimeUnit.SECONDS  );
     }
 
 

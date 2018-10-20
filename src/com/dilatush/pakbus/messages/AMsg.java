@@ -15,6 +15,7 @@ import java.util.List;
 
 import static com.dilatush.pakbus.Protocol.BMP5;
 import static com.dilatush.pakbus.Protocol.PakCtrl;
+import static com.dilatush.pakbus.Protocol.SerPkt;
 import static com.dilatush.pakbus.types.DataTypes.BYTE;
 
 /**
@@ -25,14 +26,15 @@ import static com.dilatush.pakbus.types.DataTypes.BYTE;
  */
 abstract public class AMsg implements Msg {
 
-    final protected Protocol    protocol;   // the protocol used for this message
-    final protected MessageType type;       // the type of this message
-    final protected int         code;       // the PakBus message type code (for BMP5 and PakCtrl protocols) or the LinkState code (for SerPkt)
-    final protected Context     context;    // the communications context associated with this message
+    final protected Protocol    protocol;           // the protocol used for this message
+    final protected MessageType type;               // the type of this message
+    final protected int         code;               // the PakBus message type code (for BMP5 and PakCtrl protocols) or the LinkState code (for SerPkt)
+    final protected Context     context;            // the communications context associated with this message
 
-    protected CompositeDatum    datum;      // the datum for the message contents, if any
-    protected List<CP>          props;      // the ordered list of datum properties for PakCtrl and BMP5 messages
-    protected Packet            packet;     // the packet this message was decoded from (for received messages)
+    protected CompositeDatum    datum;              // the datum for the message contents, if any
+    protected List<CP>          props;              // the ordered list of datum properties for PakCtrl and BMP5 messages
+    protected Packet            packet;             // the packet this message was decoded from (for received messages)
+    protected int               transactionNumber;  // the transaction number for this message
 
 
     /**
@@ -64,9 +66,17 @@ abstract public class AMsg implements Msg {
      * Creates the datum for this message.
      */
     protected void setDatum() {
-        datum = new CompositeDatum( getDataType() );
-        datum.at( "MsgType" ).setTo( code );
-        datum.at( "TranNbr" ).setTo( context.transactionNumber() );
+        if( protocol != SerPkt ) {
+            datum = new CompositeDatum( getDataType() );
+            datum.at( "MsgType" ).setTo( code );
+            datum.at( "TranNbr" ).setTo( context.transactionNumber() );
+            transactionNumber = context.transactionNumber();
+        }
+    }
+
+
+    protected void setBase() {
+        transactionNumber = datum.at( "TranNbr" ).getAsInt();
     }
 
 
@@ -158,6 +168,11 @@ abstract public class AMsg implements Msg {
     }
 
 
+    /**
+     * Return the packet this message was decoded from.
+     *
+     * @return the packet this message was decoded from
+     */
     public Packet getPacket() {
         return packet;
     }
@@ -165,5 +180,16 @@ abstract public class AMsg implements Msg {
 
     public void setPacket( final Packet _packet ) {
         packet = _packet;
+    }
+
+
+    /**
+     * Returns the transaction number for this message.
+     *
+     * @return the transaction number for this message
+     */
+    @Override
+    public int transactionNumber() {
+        return transactionNumber;
     }
 }

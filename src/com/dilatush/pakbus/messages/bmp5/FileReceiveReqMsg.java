@@ -80,6 +80,7 @@ public class FileReceiveReqMsg extends AMsg {
         closeFlag    = datum.at( FIELD_CLOSE_FLAG    ).getAsInt();
         fileOffset   = datum.at( FIELD_FILE_OFFSET   ).getAsInt();
         swath        = datum.at( FIELD_SWATH         ).getAsInt();
+        setBase();
     }
 
 

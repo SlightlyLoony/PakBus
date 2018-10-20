@@ -1,17 +1,5 @@
 package com.dilatush.pakbus;
 
-import com.dilatush.pakbus.comms.*;
-import com.dilatush.pakbus.messages.*;
-import com.dilatush.pakbus.messages.bmp5.*;
-import com.dilatush.pakbus.messages.pakctrl.*;
-import com.dilatush.pakbus.messages.serpkt.ReadyMsg;
-import com.dilatush.pakbus.messages.serpkt.RingMsg;
-import com.dilatush.pakbus.objects.TableDefinitions;
-
-import java.nio.ByteBuffer;
-import java.time.Duration;
-import java.time.Instant;
-
 /**
  * @author Tom Dilatush  tom@dilatush.com
  */
@@ -20,6 +8,7 @@ public class Test {
 
     public static void main( String[] _args ) throws InterruptedException {
 
+        /*
         // some setup...
 
         SerialTransceiver st = PortSerialTransceiver
@@ -48,12 +37,16 @@ public class Test {
 
         ByteBuffer data = readFile( ".TDF", pt, cx );
         TableDefinitions tds = new TableDefinitions( data );
+        data = readFile( ".TDFS", pt, cx );
+        TableSummaries tss = new TableSummaries( data );
+
+        data = readFile( ".DIR", pt, cx );
 
         msg = request( pt, new FileControlReqMsg( 0, "argyle.dac", 18, "awfully.cad", cx ), FileControlRspMsg.class );
 
-        st.hashCode();
+        st.hashCode();*/
     }
-
+/*
 
     private static ByteBuffer readFile( final String _fileName, final PacketTransceiver _packetTransceiver, final Context _context ) throws InterruptedException {
 
@@ -65,7 +58,7 @@ public class Test {
 
             Msg msg = request( _packetTransceiver, new FileReceiveReqMsg( 0, _fileName, 0, offset, swath, _context ), FileReceiveRspMsg.class );
             FileReceiveRspMsg rmsg = (FileReceiveRspMsg) msg;
-            if( rmsg.responseCode != 0 )
+            if( rmsg.responseCode != ResponseCode.OK )
                 throw new IllegalStateException( "Problem on file read" );
 
             if( result.remaining() < rmsg.fileData.limit() ) {
@@ -112,5 +105,5 @@ public class Test {
         }
         result.flip();
         return result;
-    }
+    } */
 }

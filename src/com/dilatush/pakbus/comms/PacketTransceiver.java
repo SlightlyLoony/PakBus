@@ -19,9 +19,9 @@ public interface PacketTransceiver {
 
 
     /**
-     * Returns the next packet received from this packet transceiver, blocking until it becomes available.
+     * Returns the next packet received from this packet transceiver, blocking for up to one second until it becomes available.
      *
-     * @return the next packet received
+     * @return the next packet received, or null if none were received
      * @throws InterruptedException if interrupted while blocked
      */
     RawPacket rx() throws InterruptedException;

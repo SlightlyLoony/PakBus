@@ -60,6 +60,7 @@ public class ClockReqMsg extends AMsg {
         datum = new CompositeDatum( getDataType() );
         datum.set( new BitBuffer( _bytes ) );
         adjustment = datum.at( FIELD_ADJ ).getAsNSec();
+        setBase();
     }
 
 

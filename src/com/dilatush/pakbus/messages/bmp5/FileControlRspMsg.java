@@ -30,11 +30,11 @@ public class FileControlRspMsg extends AMsg {
     final static public int         CODE     = 0x9E;
     final static public MessageType TYPE     = Response;
 
-    final public int responseCode;
-    final public int holdoff;
+    final public ResponseCode responseCode;
+    final public int          holdoff;
 
 
-    public FileControlRspMsg( final byte _responseCode, final int _holdoff, final Context _context ) {
+    public FileControlRspMsg( final ResponseCode _responseCode, final int _holdoff, final Context _context ) {
         super( PROTOCOL, CODE, TYPE, _context );
 
         // sanity check...
@@ -47,7 +47,7 @@ public class FileControlRspMsg extends AMsg {
         // create and initialize our datum...
         initDataType();
         setDatum();
-        datum.at( FIELD_RESPONSE_CODE ).setTo( responseCode );
+        datum.at( FIELD_RESPONSE_CODE ).setTo( responseCode.getCode() );
         datum.at( FIELD_HOLDOFF  ).setTo( holdoff      );
     }
 
@@ -62,8 +62,9 @@ public class FileControlRspMsg extends AMsg {
         initDataType();
         datum = new CompositeDatum( getDataType() );
         datum.set( new BitBuffer( _bytes ) );
-        responseCode = datum.at( FIELD_RESPONSE_CODE ).getAsInt();
+        responseCode = ResponseCode.decode( datum.at( FIELD_RESPONSE_CODE ).getAsInt() );
         holdoff      = datum.at( FIELD_HOLDOFF ).getAsInt();
+        setBase();
     }
 
 

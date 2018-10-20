@@ -1,4 +1,4 @@
-package com.dilatush.pakbus.objects;
+package com.dilatush.pakbus.shims;
 
 import com.dilatush.pakbus.NSec;
 import com.dilatush.pakbus.types.CP;
@@ -7,6 +7,8 @@ import com.dilatush.pakbus.types.DataTypes;
 import com.dilatush.pakbus.util.Checks;
 import com.dilatush.pakbus.values.CompositeDatum;
 import com.dilatush.pakbus.values.Datum;
+
+import static com.dilatush.pakbus.shims.ProgramStatus.NoProgramRunning;
 
 /**
  * Encapsulates the programming statistics returned by a {@link com.dilatush.pakbus.messages.bmp5.GetProgrammingStatisticsRspMsg}.
@@ -47,17 +49,17 @@ public class ProgrammingStatistics {
             new CP( FIELD_TYPE1,       TYPE1, true ) );
 
     // the public properties...
-    final public String osVersion;
-    final public int    osSignature;
-    final public String serialNumber;
-    final public String powerUpProgram;
-    final public int    programStatus;
-    final public String currentProgramFileName;
-    final public int    currentProgramSignature;
-    final public NSec   currentProgramCompileTime;
-    final public String currentProgramCompileResult;
-    final public String dataloggerModel;
-    final public String stationName;
+    final public String        osVersion;
+    final public int           osSignature;
+    final public String        serialNumber;
+    final public String        powerUpProgram;
+    final public ProgramStatus programStatus;
+    final public String        currentProgramFileName;
+    final public int           currentProgramSignature;
+    final public NSec          currentProgramCompileTime;
+    final public String        currentProgramCompileResult;
+    final public String        dataloggerModel;
+    final public String        stationName;
 
 
     public ProgrammingStatistics( final CompositeDatum _datum ) {
@@ -69,7 +71,7 @@ public class ProgrammingStatistics {
             osSignature                 = datum.at(  FIELD_OS_SIG        ).getAsInt();
             serialNumber                = datum.at(  FIELD_SERIAL_NO     ).getAsString();
             powerUpProgram              = datum.at(  FIELD_POWER_UP_PROG ).getAsString();
-            programStatus               = datum.at(  FIELD_COMP_STATE    ).getAsInt();
+            programStatus               = ProgramStatus.decode( datum.at(  FIELD_COMP_STATE    ).getAsInt() );
             currentProgramFileName      = datum.at(  FIELD_PROG_NAME     ).getAsString();
             currentProgramSignature     = datum.at(  FIELD_PROG_SIG      ).getAsInt();
             currentProgramCompileTime   = datum.at(  FIELD_COMP_TIME     ).getAsNSec();
@@ -94,7 +96,7 @@ public class ProgrammingStatistics {
             osSignature                 = 0;
             serialNumber                = null;
             powerUpProgram              = null;
-            programStatus               = 0;
+            programStatus               = NoProgramRunning;
             currentProgramFileName      = null;
             currentProgramSignature     = 0;
             currentProgramCompileTime   = null;
@@ -106,7 +108,7 @@ public class ProgrammingStatistics {
 
 
     public ProgrammingStatistics( final String _osVersion, final int _osSignature, final String _serialNumber, final String _powerUpProgram,
-                                  final int _programStatus, final String _currentProgramFileName, final int _currentProgramSignature,
+                                  final ProgramStatus _programStatus, final String _currentProgramFileName, final int _currentProgramSignature,
                                   final NSec _currentProgramCompileTime, final String _currentProgramCompileResult, final String _dataloggerModel,
                                   final String _stationName ) {
 
@@ -137,7 +139,7 @@ public class ProgrammingStatistics {
         datum.at( FIELD_OS_SIG        ).setTo( osSignature                 );
         datum.at( FIELD_SERIAL_NO     ).setTo( serialNumber                );
         datum.at( FIELD_POWER_UP_PROG ).setTo( powerUpProgram              );
-        datum.at( FIELD_COMP_STATE    ).setTo( programStatus               );
+        datum.at( FIELD_COMP_STATE    ).setTo( programStatus.getCode()     );
         datum.at( FIELD_PROG_NAME     ).setTo( currentProgramFileName      );
         datum.at( FIELD_PROG_SIG      ).setTo( currentProgramSignature     );
         datum.at( FIELD_COMP_TIME     ).setTo( currentProgramCompileTime   );

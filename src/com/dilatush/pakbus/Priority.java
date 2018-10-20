@@ -33,10 +33,10 @@ public enum Priority {
 
 
     /**
-     * Decodes the given value to the Priority instance it represents (which may be INVALID if the code is invalid).
+     * Decodes the given value to the Priority instance it represents (which may be UNKNOWN if the code is invalid).
      *
      * @param _value the value to decode
-     * @return The decoded instance (INVALID if the given value was invalid)
+     * @return The decoded instance (UNKNOWN if the given value was invalid)
      */
     public static Priority decode( final int _value ) {
 

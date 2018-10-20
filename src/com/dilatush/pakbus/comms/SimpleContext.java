@@ -1,96 +1,63 @@
 package com.dilatush.pakbus.comms;
 
-import com.dilatush.pakbus.Address;
-import com.dilatush.pakbus.HopCount;
+import com.dilatush.pakbus.app.Application;
+import com.dilatush.pakbus.app.Datalogger;
 
 /**
+ * Instances of this class represent a simple context.  Instances of this class are immutable and threadsafe.
+ *
  * @author Tom Dilatush  tom@dilatush.com
  */
 public class SimpleContext implements Context {
 
-
-    final private Address  appAddr;
-    final private Address  logAddr;
-    final private int      appNode;
-    final private int      logNode;
-    final private HopCount hopCount;
-    final private int      trnNbr;
+    final private Application application;
+    final private Datalogger datalogger;
+    final private int transactionNumber;
 
 
-    public SimpleContext( final Address _appAddr, final Address _logAddr, final int _appNode, final int _logNode,
-                          final HopCount _hopCount, final int _trnNbr ) {
-
-        appAddr = _appAddr;
-        logAddr = _logAddr;
-        appNode = _appNode;
-        logNode = _logNode;
-        hopCount = _hopCount;
-        trnNbr = _trnNbr;
+    /**
+     * Creates a new instance of this class with the given application and datalogger.
+     *
+     * @param _application the application
+     * @param _datalogger the datalogger
+     * @param _transactionNumber the transaction number
+     */
+    public SimpleContext( final Application _application, final Datalogger _datalogger, final int _transactionNumber ) {
+        application = _application;
+        datalogger = _datalogger;
+        transactionNumber = _transactionNumber;
     }
 
 
     /**
-     * Returns the application's physical PakBus address.
+     * Returns the application associated with the use of this interface.
      *
-     * @return the application's physical PakBus address
+     * @return the application
      */
     @Override
-    public Address applicationAddress() {
-        return appAddr;
+    public Application application() {
+        return application;
     }
 
 
     /**
-     * Returns the datalogger's physical PakBus address.
+     * Returns the datalogger associated with the use of this interface.
      *
-     * @return the datalogger's physical PakBus address
+     * @return the datalogger
      */
     @Override
-    public Address dataloggerAddress() {
-        return logAddr;
+    public Datalogger datalogger() {
+        return datalogger;
     }
 
 
     /**
-     * Returns the application's node ID.
+     * Return the transaction number for a request message.
      *
-     * @return the application's node ID
-     */
-    @Override
-    public int applicationNode() {
-        return appNode;
-    }
-
-
-    /**
-     * Returns the datalogger's node ID.
-     *
-     * @return the datalogger's node ID
-     */
-    @Override
-    public int dataloggerNode() {
-        return logNode;
-    }
-
-
-    /**
-     * Returns the hop count between the application and the datalogger.
-     *
-     * @return the hop count between the application and the datalogger
-     */
-    @Override
-    public HopCount hopCount() {
-        return hopCount;
-    }
-
-
-    /**
-     * Returns the transaction number to use for sending a message, or the transaction number received for a received message.
-     *
-     * @return the transaction number
+     * @return the transaction number for a request message
      */
     @Override
     public int transactionNumber() {
-        return trnNbr;
+        return transactionNumber;
     }
 }
