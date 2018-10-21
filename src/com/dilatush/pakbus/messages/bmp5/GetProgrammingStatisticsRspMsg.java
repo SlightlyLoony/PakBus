@@ -51,7 +51,7 @@ public class GetProgrammingStatisticsRspMsg extends AMsg {
 
 
     private void initDataType() {
-        props.add( new CP( FIELD_RESPONSE_CODE, DataTypes.UINT2 ) );
+        props.add( new CP( FIELD_RESPONSE_CODE, DataTypes.BYTE ) );
         props.add( new CP( ProgrammingStatistics.FIELD_TYPE0, ProgrammingStatistics.TYPE0, true ) );
     }
 }

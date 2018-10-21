@@ -74,6 +74,7 @@ public class SetStringSettingsRspMsg extends AMsg {
         datum.set( new BitBuffer( _bytes ) );
         responseCode = 0xFF & datum.at( FIELD_RESPCODE ).getAsByte();
         failOffset = datum.at( FIELD_FAIL_OFFSET ).isSet() ? datum.at( FIELD_FAIL_OFFSET ).getAsInt() : 0;
+        setBase();
     }
 
 

@@ -69,6 +69,7 @@ public class HelloRspMsg extends AMsg {
         isRouter       = datum.at( FIELD_IS_ROUTER       ).getAsByte();
         hopMetric      = datum.at( FIELD_HOP_METRIC      ).getAsByte();
         verifyInterval = datum.at( FIELD_VERIFY_INTERVAL ).getAsInt();
+        setBase();
     }
 
 

@@ -82,6 +82,7 @@ public class GetStringSettingsRspMsg extends AMsg {
             settingsMap.put( settingParts[0], settingParts[1] );
         }
         settings = Collections.unmodifiableMap( settingsMap );
+        setBase();
     }
 
 

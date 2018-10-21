@@ -25,6 +25,7 @@ public class ClockReqMsg extends AMsg {
 
 
     final static public String FIELD_ADJ = "Adjustment";
+    final static public String FIELD_SECURITY_CODE = "SecurityCode";
 
     final public NSec adjustment;
 
@@ -33,7 +34,7 @@ public class ClockReqMsg extends AMsg {
     final static public MessageType TYPE     = Request;
 
 
-    public ClockReqMsg( final NSec _adjustment, final Context _context ) {
+    public ClockReqMsg( final int _securityCode, final NSec _adjustment, final Context _context ) {
         super( PROTOCOL, CODE, TYPE, _context );
 
         // sanity check...
@@ -45,6 +46,7 @@ public class ClockReqMsg extends AMsg {
         // create and initialize our datum...
         initDataType();
         setDatum();
+        datum.at( FIELD_SECURITY_CODE ).setTo( _securityCode );
         datum.at( FIELD_ADJ ).setTo( _adjustment );
     }
 
@@ -65,6 +67,7 @@ public class ClockReqMsg extends AMsg {
 
 
     private void initDataType() {
+        props.add( new CP( FIELD_SECURITY_CODE, DataTypes.UINT2 ) );
         props.add( new CP( FIELD_ADJ, DataTypes.NSEC ) );
     }
 }

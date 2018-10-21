@@ -60,4 +60,29 @@ public class TableDefinition {
             byName.put( fieldDef.name, fieldDef );
         }
     }
+
+
+    /**
+     * Returns the number of elements in this list.  If this list contains
+     * more than <tt>Integer.MAX_VALUE</tt> elements, returns
+     * <tt>Integer.MAX_VALUE</tt>.
+     *
+     * @return the number of elements in this list
+     */
+    public int fieldSize() {
+        return byNumber.size();
+    }
+
+
+    /**
+     * Returns the element at the specified position in this list.
+     *
+     * @param index index of the element to return
+     * @return the element at the specified position in this list
+     * @throws IndexOutOfBoundsException if the index is out of range
+     *         (<tt>index &lt; 0 || index &gt;= size()</tt>)
+     */
+    public FieldDefinition getField( final int index ) {
+        return byNumber.get( index );
+    }
 }

@@ -114,6 +114,10 @@ public abstract class ADatum implements Datum {
         String[] parts = _path.split( "\\." );
         Datum current = this;
 
+        // if we just got an array datum, use an index if there's one available...
+        if( (current instanceof ArrayDatum) && (indiceIndex < _indices.length) )
+            current = ((ArrayDatum)current).get( indiceIndex++ );
+
         // traverse our path...
         for( String part : parts ) {
 

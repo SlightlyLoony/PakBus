@@ -64,6 +64,7 @@ public class Packet {
         Datalogger logger = cx.datalogger();
         Address dstAddr = (logger == null) ? Address.BROADCAST : logger.address.address;
         int dstNode = (logger == null) ? 0 : logger.address.nodeID;
+        HopCount dstHops = (logger == null ) ? HopCount.ZERO : logger.hopCount;
         datum = new PacketDatum();
         datum.at( "LinkState"   ).setTo( _options.state.getCode()                      );
         datum.at( "DstPhyAddr"  ).setTo( dstAddr.getAddress()                          );
@@ -76,7 +77,7 @@ public class Packet {
 
             datum.at( "HiLevel.HiProtoCode" ).setTo( _message.protocol().getCode()      );
             datum.at( "HiLevel.DstNodeId"   ).setTo( dstNode                            );
-            datum.at( "HiLevel.HopCnt"      ).setTo( cx.datalogger().hopCount.getHops() );
+            datum.at( "HiLevel.HopCnt"      ).setTo( dstHops.getHops()                  );
             datum.at( "HiLevel.SrcNodeId"   ).setTo( cx.application().address.nodeID    );
             datum.at( "HiLevel.Message"     ).setTo( _message.bytes()                   );
         }

@@ -1,18 +1,25 @@
 package com.dilatush.pakbus.app;
 
-import com.dilatush.pakbus.Address;
-import com.dilatush.pakbus.Log;
-import com.dilatush.pakbus.Node;
-import com.dilatush.pakbus.Packet;
+import com.dilatush.pakbus.*;
 import com.dilatush.pakbus.comms.*;
 import com.dilatush.pakbus.messages.Msg;
 import com.dilatush.pakbus.messages.MsgFactory;
+import com.dilatush.pakbus.messages.pakctrl.ClockNotificationMsg;
 import com.dilatush.pakbus.messages.serpkt.RingMsg;
+import com.dilatush.pakbus.shims.DataQuery;
+import com.dilatush.pakbus.shims.TableDefinition;
+import com.dilatush.pakbus.shims.TableDefinitions;
 import com.dilatush.pakbus.util.Checks;
+import com.dilatush.pakbus.values.Datum;
 
+import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import static java.lang.Thread.sleep;
 
 /**
  * Instances of this class implement a PakBus application.  Instances of this class are mutable and stateful, but are nevertheless threadsafe through
@@ -84,6 +91,19 @@ public class Application {
      */
     public void broadcastRing() {
         Msg msg = new RingMsg( broadcastContext );
+        Packet packet = msg.encode();
+        transceiver.tx( new RawPacket( packet.encode() ) );
+    }
+
+
+    /**
+     * Broadcasts the current time to set all dataloggers.
+     */
+    public void setClock() {
+
+        NSec now = NSec.now();
+        now = now.add( new NSec( 268239600, 0) );
+        Msg msg = new ClockNotificationMsg( NSec.now(), broadcastContext );
         Packet packet = msg.encode();
         transceiver.tx( new RawPacket( packet.encode() ) );
     }
@@ -227,10 +247,46 @@ public class Application {
         Datalogger logger = new Datalogger( app, "WeatherHawk 621", loggerAddr );
         app.register( logger );
 
+
+        // calibrate the clock...
+        logger.calibrateClock();
+
         // get the time...
         Instant time = logger.getTime();
+        Duration error = Duration.between( Instant.now(), time );
 
+        // get the settings...
+        Map<String,String> settings = logger.getAllSettings();
+        List<String> settingNames = new ArrayList<>();
+
+        // collect most recent record from data2...
+        TableDefinitions defs = logger.getTableDefinitions();
+        TableDefinition pub = defs.getTableDef( "Public" );
+        DataQuery query = new DataQuery( pub.index, pub.signature );
+
+        while( true ) {
+            Datum datum = logger.collectMostRecent( query, 1 );
+            if( datum == null ) break;
+
+            pp( "AirTemp_C", datum );
+            pp( "RH", datum );
+            pp( "WindSpeed_ms", datum );
+            pp( "WindDirect_deg", datum );
+            pp( "Barometer_KPa", datum );
+            pp( "Solar", datum );
+            pp( "BatVolt_V", datum );
+            Log.logLn( "--------------------------" );
+
+            sleep(9000 );
+        }
 
         st.hashCode();
+    }
+
+
+    private static void pp( final String _name, final Datum _datum ) {
+
+        Datum value = _datum.at( _name, 0 );
+        Log.logLn( _name + ": " + value.getAsDouble() );
     }
 }

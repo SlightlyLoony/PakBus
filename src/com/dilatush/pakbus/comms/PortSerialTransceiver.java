@@ -297,9 +297,9 @@ public class PortSerialTransceiver implements SerialTransceiver {
         private Reader() {
             setName( "PortSerialTransceiver.Reader" );
             setDaemon( true );
-            start();
             queue = new LinkedBlockingDeque<>( RECEIVE_QUEUE_SIZE );
             lastByte = Instant.now();
+            start();
         }
 
 

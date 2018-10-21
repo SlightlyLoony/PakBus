@@ -2,10 +2,17 @@ package com.dilatush.pakbus.types;
 
 import com.dilatush.pakbus.PakBusBaseDataType;
 
+import java.lang.String;
 import java.nio.ByteOrder;
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.dilatush.pakbus.PakBusBaseDataType.*;
-import static java.nio.ByteOrder.*;
+import static com.dilatush.pakbus.PakBusBaseDataType.Boolean;
+import static com.dilatush.pakbus.PakBusBaseDataType.Float;
+import static com.dilatush.pakbus.PakBusBaseDataType.String;
+import static java.nio.ByteOrder.BIG_ENDIAN;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
  * Represents all possible data types used in PakCtrl or BMP5 messages.  Most of these are documented in Campbell Scientific documentation, but
@@ -48,6 +55,9 @@ public enum PakBusType {
     ASCII      (  8, "ASCII",         11,  null,          String          ),
     ASCIIZ     (  0, "ASCIIZ",        16,  null,          String          );
 
+
+    private static Map<Integer,PakBusType> byCode;
+
     private int                bits;        // length of the data type in bits, or 0 if it is a variable length field...
     private String             name;        // the name of the type...
     private int                code;        // the Campbell Scientific code used to indicate this type...
@@ -62,6 +72,19 @@ public enum PakBusType {
         code = _code;
         order = _order;
         base = _base;
+        init( );
+    }
+
+
+    private void init() {
+        if( byCode == null )
+            byCode = new HashMap<>();
+        byCode.put( code, this );
+    }
+
+
+    public static PakBusType decode( final int _code ) {
+        return byCode.get( _code );
     }
 
 
