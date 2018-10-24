@@ -27,6 +27,7 @@ public enum PakBusType {
     UInt2      ( 16, "UInt2",          2,  BIG_ENDIAN,    UnsignedInteger ),
     UInt2Lsf   ( 16, "UInt2Lsf",      21,  LITTLE_ENDIAN, UnsignedInteger ),
     UShort     ( 16, "UShort",        21,  LITTLE_ENDIAN, UnsignedInteger ),
+    ULong      ( 32, "ULong",         22,  LITTLE_ENDIAN, UnsignedInteger ),
     UInt4      ( 32, "UInt4",          3,  BIG_ENDIAN,    SignedInteger   ),
     Int1       (  8, "Int1",           4,  null,          SignedInteger   ),
     Int2       ( 16, "Int2",           5,  BIG_ENDIAN,    SignedInteger   ),
@@ -52,6 +53,7 @@ public enum PakBusType {
     USec       ( 48, "USec",          13,  BIG_ENDIAN,    UnsignedInteger ),
     NSec       ( 64, "NSec",          14,  BIG_ENDIAN,    SignedInteger   ),
     NSecLsf    ( 64, "NSecLsf",       26,  LITTLE_ENDIAN, SignedInteger   ),
+    SecNano    ( 64, "SecNano",       23,  LITTLE_ENDIAN, SignedInteger   ),
     ASCII      (  8, "ASCII",         11,  null,          String          ),
     ASCIIZ     (  0, "ASCIIZ",        16,  null,          String          );
 

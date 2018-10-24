@@ -18,6 +18,7 @@ public class DataTypes {
     final public static DataType UINT2    = new SimpleDataType( "UInt2",    PakBusType.UInt2,    16, UnsignedInteger, BIG_ENDIAN    );
     final public static DataType UINT2LSF = new SimpleDataType( "UInt2Lsf", PakBusType.UInt2Lsf, 16, UnsignedInteger, LITTLE_ENDIAN );
     final public static DataType USHORT   = new SimpleDataType( "UShort",   PakBusType.UShort,   16, UnsignedInteger, LITTLE_ENDIAN );
+    final public static DataType ULONG    = new SimpleDataType( "ULong",    PakBusType.ULong,    32, UnsignedInteger, LITTLE_ENDIAN );
     final public static DataType UINT4    = new SimpleDataType( "UInt4",    PakBusType.UInt4,    32, UnsignedInteger, BIG_ENDIAN    );
     final public static DataType INT1     = new SimpleDataType( "Int1",     PakBusType.Int1,      8, SignedInteger,   null          );
     final public static DataType INT2     = new SimpleDataType( "Int2",     PakBusType.Int2,     16, SignedInteger,   BIG_ENDIAN    );
@@ -58,8 +59,11 @@ public class DataTypes {
                 new CP( "Seconds",     INT4    ),
                 new CP( "Nanoseconds", INT4    ) );
     final public static DataType NSECLSF = new CompositeDataType( "NSecLsf", PakBusType.NSecLsf,
-                new CP( "Seconds",     INT4LSF ),
-                new CP( "Nanoseconds", INT4LSF ) );
+            new CP( "Seconds",     INT4LSF ),
+            new CP( "Nanoseconds", INT4LSF ) );
+    final public static DataType SECNANO = new CompositeDataType( "SecNano", PakBusType.SecNano,
+            new CP( "Seconds",     INT4LSF ),
+            new CP( "Nanoseconds", INT4LSF ) );
 
     // this must come after the DataType initializations above...
     final private static DataTypes ourInstance = new DataTypes();
@@ -84,6 +88,7 @@ public class DataTypes {
         add( UINT2    );
         add( UINT2LSF );
         add( USHORT   );
+        add( ULONG    );
         add( UINT4    );
         add( INT1     );
         add( INT2     );
@@ -122,6 +127,7 @@ public class DataTypes {
         // then our basic composite types...
         add( NSEC     );
         add( NSECLSF  );
+        add( SECNANO  );
     }
 
 

@@ -1,29 +1,21 @@
 package com.dilatush.pakbus.app;
 
-import com.dilatush.pakbus.*;
-import com.dilatush.pakbus.comms.*;
+import com.dilatush.pakbus.Log;
+import com.dilatush.pakbus.NSec;
+import com.dilatush.pakbus.Node;
+import com.dilatush.pakbus.Packet;
+import com.dilatush.pakbus.comms.Context;
+import com.dilatush.pakbus.comms.PacketTransceiver;
+import com.dilatush.pakbus.comms.RawPacket;
+import com.dilatush.pakbus.comms.SimpleContext;
 import com.dilatush.pakbus.messages.Msg;
 import com.dilatush.pakbus.messages.MsgFactory;
 import com.dilatush.pakbus.messages.pakctrl.ClockNotificationMsg;
 import com.dilatush.pakbus.messages.serpkt.RingMsg;
-import com.dilatush.pakbus.shims.DataQuery;
-import com.dilatush.pakbus.shims.TableDefinition;
-import com.dilatush.pakbus.shims.TableDefinitions;
-import com.dilatush.pakbus.types.DataTypes;
-import com.dilatush.pakbus.types.PakBusType;
 import com.dilatush.pakbus.util.Checks;
-import com.dilatush.pakbus.values.Datum;
-import com.dilatush.pakbus.values.SimpleDatum;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-
-import static java.lang.Thread.sleep;
 
 /**
  * Instances of this class implement a PakBus application.  Instances of this class are mutable and stateful, but are nevertheless threadsafe through
@@ -231,91 +223,5 @@ public class Application {
                 }
             }
         }
-    }
-
-
-    static public void main( String[] _args ) throws InterruptedException {
-
-        // some setup...
-        SerialTransceiver st = PortSerialTransceiver
-                .getSerialTransceiver( "/dev/cu.usbserial-AC01R521", 9600, 8,
-                        PortSerialTransceiver.STOP_BITS_ONE, PortSerialTransceiver.PARITY_NONE, PortSerialTransceiver.FLOW_CTRL_NONE );
-        PacketTransceiver pt = new SerialPacketTransceiver( st );
-        Node appAddr = new Node( new Address( 4010 ), 1 );
-
-        // get our app...
-        Application app = new Application( pt, appAddr );
-
-        // now get our WeatherHawk datalogger...
-        Node loggerAddr = new Node( new Address( 1027 ), 1027 );
-        Datalogger logger = new Datalogger( app, "WeatherHawk 621", loggerAddr );
-        app.register( logger );
-
-
-
-        // try setting and returning a value...
-//        logger.getTableDefinitions();
-//        Datum saver = new SimpleDatum( DataTypes.IEEE4 );
-//        saver.setTo( 1 );
-//        logger.setValues( "Public", "SaveSite", saver );
-        Datum answer;
-        answer = logger.getValues( "Status", "OSversion", PakBusType.ASCIIZ );
-        Datum altitude = new SimpleDatum( DataTypes.IEEE4 );
-        altitude.setTo( 1473 );
-        logger.setValues( "SiteVal", "Altitude_m", altitude );
-        answer = logger.getValues( "SiteVal", "Altitude_m", PakBusType.IEEE4 );
-
-
-        // calibrate the clock...
-        logger.calibrateClock();
-
-        // get the time...
-        Instant time = logger.getTime();
-        Duration error = Duration.between( Instant.now(), time );
-
-        // get the settings...
-        Map<String,String> settings = logger.getAllSettings();
-        List<String> settingNames = new ArrayList<>();
-
-        // collect most recent record from data2...
-        TableDefinitions defs = logger.getTableDefinitions();
-        TableDefinition pub = defs.getTableDef( "Public" );
-        DataQuery query = new DataQuery( pub.index, pub.signature );
-        TableDefinition data1 = defs.getTableDef( "data1" );
-        DataQuery query2 = new DataQuery( data1.index, data1.signature );
-
-        NSec startTS = new NSec( Instant.now().minus( 50, ChronoUnit.HOURS ) );
-        NSec endTS = new NSec( Instant.now().minus( 49, ChronoUnit.HOURS ) );
-        List<Datum> records2 = logger.collectRangeOfTimestamps( query2, startTS, endTS );
-
-        while( true ) {
-            List<Datum> records = logger.collectMostRecent( query, 1 );
-            if( records == null ) break;
-
-            Datum datum = records.get( 0 );
-
-            pp( "AirTemp_C", datum );
-            pp( "RH", datum );
-            pp( "WindSpeed_ms", datum );
-            pp( "WindDirect_deg", datum );
-            pp( "Barometer_KPa", datum );
-            pp( "Solar", datum );
-            pp( "BatVolt_V", datum );
-            pp( "RainYearly_mm", datum );
-            pp( "Snow_Acc_Yearly", datum );
-            pp( "SnowYearly_mm", datum );
-            Log.logLn( "--------------------------" );
-
-            sleep(9000 );
-        }
-
-        st.hashCode();
-    }
-
-
-    private static void pp( final String _name, final Datum _datum ) {
-
-        Datum value = _datum.at( _name );
-        Log.logLn( _name + ": " + value.getAsDouble() );
     }
 }

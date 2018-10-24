@@ -116,7 +116,7 @@ public abstract class ADatum implements Datum {
 
         // if we just got an array datum, use an index if there's one available...
         if( (current instanceof ArrayDatum) && (indiceIndex < _indices.length) )
-            current = ((ArrayDatum)current).get( indiceIndex++ );
+            current = ((ArrayDatum)current).get( _indices[indiceIndex++] );
 
         // traverse our path...
         for( String part : parts ) {
@@ -132,7 +132,7 @@ public abstract class ADatum implements Datum {
 
             // if we just got an array datum, use an index if there's one available...
             if( (current instanceof ArrayDatum) && (indiceIndex < _indices.length) )
-                current = ((ArrayDatum)current).get( indiceIndex++ );
+                current = ((ArrayDatum)current).get( _indices[indiceIndex++] );
         }
 
         // and we're done...

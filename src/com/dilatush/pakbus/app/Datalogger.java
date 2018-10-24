@@ -477,7 +477,7 @@ public class Datalogger {
      * and it is the timestamp from the datalogger indicating when the record was collected.  The second is named "RecordNumber", and it is a four
      * byte unsigned integer with the datalogger's record number for the record. Note that a single call to this method may result in multiple
      * request/response transactions with the datalogger, as the cumulative size of the requested records may exceed what the datalogger can return in
-     * a single message.
+     * a single message.  Note: this collection mode is not implemented on the model CR200 dataloggers.
      *
      * @param _query the query specifying the table and fields to collect data from
      * @param _startRecord the first timestamp to collect
@@ -515,7 +515,7 @@ public class Datalogger {
      * @param _reqMsg the request message to initiate collection with
      * @return the list of collected records
      */
-    public List<Datum> collectRecords( final DataQuery _query, final CollectDataReqMsg _reqMsg ) {
+    private List<Datum> collectRecords( final DataQuery _query, final CollectDataReqMsg _reqMsg ) {
 
         // sanity check...
         Checks.required( _query );
@@ -688,6 +688,8 @@ public class Datalogger {
 
         // get our base type...
         DataType dataType = DataTypes.fromPakBusType( PakBusType.decode( _fieldDefinition.fieldType ) );
+        if( dataType == null )
+            throw new IllegalStateException( "Invalid data type: " + _fieldDefinition.fieldType );
 
         // if it's not an array, just return a simple type...
         if( _fieldDefinition.pieceSize == 1 )
