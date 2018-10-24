@@ -17,7 +17,7 @@ public enum ResponseCode {
     FileNotAccessible(     14 ),
     InvalidControlOption(  15 ),   // the control option code is invalid
     InvalidName(           16 ),   // invalid table or field name
-    UnsupportedConversion( 17 ),
+    UnsupportedConversion( 17 ),   // the requested data type conversion is not supported
     MemoryViolation(       18 ),   // specified field name and swath would report more values than are available
     UnsupportedValue(      19 ),   // in fileCmd parameter of file control
     DirectoryFull(         20 ),

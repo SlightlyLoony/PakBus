@@ -9,11 +9,15 @@ import com.dilatush.pakbus.messages.serpkt.RingMsg;
 import com.dilatush.pakbus.shims.DataQuery;
 import com.dilatush.pakbus.shims.TableDefinition;
 import com.dilatush.pakbus.shims.TableDefinitions;
+import com.dilatush.pakbus.types.DataTypes;
+import com.dilatush.pakbus.types.PakBusType;
 import com.dilatush.pakbus.util.Checks;
 import com.dilatush.pakbus.values.Datum;
+import com.dilatush.pakbus.values.SimpleDatum;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -248,6 +252,20 @@ public class Application {
         app.register( logger );
 
 
+
+        // try setting and returning a value...
+//        logger.getTableDefinitions();
+//        Datum saver = new SimpleDatum( DataTypes.IEEE4 );
+//        saver.setTo( 1 );
+//        logger.setValues( "Public", "SaveSite", saver );
+        Datum answer;
+        answer = logger.getValues( "Status", "OSversion", PakBusType.ASCIIZ );
+        Datum altitude = new SimpleDatum( DataTypes.IEEE4 );
+        altitude.setTo( 1473 );
+        logger.setValues( "SiteVal", "Altitude_m", altitude );
+        answer = logger.getValues( "SiteVal", "Altitude_m", PakBusType.IEEE4 );
+
+
         // calibrate the clock...
         logger.calibrateClock();
 
@@ -263,10 +281,18 @@ public class Application {
         TableDefinitions defs = logger.getTableDefinitions();
         TableDefinition pub = defs.getTableDef( "Public" );
         DataQuery query = new DataQuery( pub.index, pub.signature );
+        TableDefinition data1 = defs.getTableDef( "data1" );
+        DataQuery query2 = new DataQuery( data1.index, data1.signature );
+
+        NSec startTS = new NSec( Instant.now().minus( 50, ChronoUnit.HOURS ) );
+        NSec endTS = new NSec( Instant.now().minus( 49, ChronoUnit.HOURS ) );
+        List<Datum> records2 = logger.collectRangeOfTimestamps( query2, startTS, endTS );
 
         while( true ) {
-            Datum datum = logger.collectMostRecent( query, 1 );
-            if( datum == null ) break;
+            List<Datum> records = logger.collectMostRecent( query, 1 );
+            if( records == null ) break;
+
+            Datum datum = records.get( 0 );
 
             pp( "AirTemp_C", datum );
             pp( "RH", datum );
@@ -275,6 +301,9 @@ public class Application {
             pp( "Barometer_KPa", datum );
             pp( "Solar", datum );
             pp( "BatVolt_V", datum );
+            pp( "RainYearly_mm", datum );
+            pp( "Snow_Acc_Yearly", datum );
+            pp( "SnowYearly_mm", datum );
             Log.logLn( "--------------------------" );
 
             sleep(9000 );
@@ -286,7 +315,7 @@ public class Application {
 
     private static void pp( final String _name, final Datum _datum ) {
 
-        Datum value = _datum.at( _name, 0 );
+        Datum value = _datum.at( _name );
         Log.logLn( _name + ": " + value.getAsDouble() );
     }
 }

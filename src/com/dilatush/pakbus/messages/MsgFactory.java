@@ -67,6 +67,8 @@ public class MsgFactory {
             case 0x089: msg = new HelloRspMsg( bytes, _cx );                     break;
             case 0x117: msg = new ClockReqMsg( bytes, _cx );                     break;
             case 0x197: msg = new ClockRspMsg( bytes, _cx );                     break;
+            case 0x19A: msg = new GetValuesRspMsg( bytes, _cx );                 break;
+            case 0x19B: msg = new SetValuesRspMsg( bytes, _cx );                 break;
             case 0x11D: msg = new FileReceiveReqMsg( bytes, _cx );               break;
             case 0x19D: msg = new FileReceiveRspMsg( bytes, _cx );               break;
             case 0x11E: msg = new FileControlReqMsg( bytes, _cx );               break;

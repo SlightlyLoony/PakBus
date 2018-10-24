@@ -41,6 +41,11 @@ public class CollectDataReqMsg extends AMsg {
     final static public MessageType TYPE     = Request;
 
     final public DataQuery query;
+    final public int mode;
+    final public int intP1;
+    final public int intP2;
+    final public NSec nsecP1;
+    final public NSec nsecP2;
 
 
     private CollectDataReqMsg( final DataQuery _query, final int _securityCode, final int _mode, final int _p1, final int _p2, final Context _context ) {
@@ -51,6 +56,11 @@ public class CollectDataReqMsg extends AMsg {
 
         // some setup...
         query = _query;
+        mode = _mode;
+        intP1 = _p1;
+        intP2 = _p2;
+        nsecP1 = null;
+        nsecP2 = null;
 
         // create and initialize our datum...
         initDataType();
@@ -83,6 +93,11 @@ public class CollectDataReqMsg extends AMsg {
 
         // some setup...
         query = _query;
+        mode = _mode;
+        intP1 = 0;
+        intP2 = 0;
+        nsecP1 = _p1;
+        nsecP2 = _p2;
 
         // create and initialize our datum...
         initDataType();

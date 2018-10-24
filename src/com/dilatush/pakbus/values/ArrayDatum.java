@@ -344,4 +344,12 @@ public class ArrayDatum extends ADatum {
     public double getAsDouble() {
         throw new UnsupportedOperationException( "Attempted to get double value from array datum" );
     }
+
+
+    @Override
+    public String toString() {
+        if( type == DataTypes.ASCIIZ )
+            return getAsString();
+        return "Array[" + array.size() + "]";
+    }
 }

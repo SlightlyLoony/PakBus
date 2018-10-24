@@ -50,7 +50,7 @@ public class CompositeDatum extends ADatum {
      *
      * @param _type the type of the new datum
      */
-    protected void changeTypeTo( final CompositeDataType _type ) {
+    public void changeTypeTo( final CompositeDataType _type ) {
 
         // sanity check...
         if( _type == null )

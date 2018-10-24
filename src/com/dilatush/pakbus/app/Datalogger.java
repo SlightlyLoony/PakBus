@@ -11,7 +11,6 @@ import com.dilatush.pakbus.messages.bmp5.*;
 import com.dilatush.pakbus.messages.pakctrl.GetStringSettingsReqMsg;
 import com.dilatush.pakbus.messages.pakctrl.GetStringSettingsRspMsg;
 import com.dilatush.pakbus.shims.DataQuery;
-import com.dilatush.pakbus.shims.DataQuery.FieldIterator;
 import com.dilatush.pakbus.shims.FieldDefinition;
 import com.dilatush.pakbus.shims.TableDefinition;
 import com.dilatush.pakbus.shims.TableDefinitions;
@@ -19,7 +18,9 @@ import com.dilatush.pakbus.types.*;
 import com.dilatush.pakbus.util.BitBuffer;
 import com.dilatush.pakbus.util.Checks;
 import com.dilatush.pakbus.values.ArrayDatum;
+import com.dilatush.pakbus.values.CompositeDatum;
 import com.dilatush.pakbus.values.Datum;
+import com.dilatush.pakbus.values.SimpleDatum;
 
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -29,6 +30,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
+
+import static com.dilatush.pakbus.types.DataTypes.*;
 
 /**
  * Instances of this class represent a datalogger on a PakBus network.  Instances of this class are mutable and stateful, and not threadsafe.
@@ -184,6 +187,106 @@ public class Datalogger {
 
 
     /**
+     * Sets one or more values in the given table and field as the given type.  If the given datum with the values to set is an array datum (but not
+     * ASCIIZ or BOOL8), then this will set any number of entries in an array field.  Otherwise (the normal case) a single value is being set.
+     *
+     * @param _tableName the table name to set the value in
+     * @param _fieldName the field name to set the value in
+     * @param _values the values to set
+     * @return the number of seconds to wait before trying to communicate with the datalogger, or -1 if there was no reboot and no wait is required,
+     *         or null if there was an error
+     */
+    public Integer setValues( final String _tableName, final String _fieldName, final Datum _values ) {
+
+        // sanity checks...
+        Checks.required( _tableName, _fieldName, _values );
+
+        // send our request and wait for an answer...
+        Msg msg = new SetValuesReqMsg( 0, _tableName, _fieldName, _values, new RequestContext() );
+        Transaction trans = sendRequest( msg, SetValuesRspMsg.class, 5 );
+
+        // wait for our response, or a bad response...
+        try { trans.waiter.acquire(); } catch( InterruptedException _e ) { return null; }
+
+        // if we got no response, just leave...
+        if( trans.response == null ) return null;
+
+        // if we got a bad response code, just leave...
+        SetValuesRspMsg rspMsg = (SetValuesRspMsg)trans.response;
+        if( rspMsg.responseCode != ResponseCode.OK )
+            return null;
+
+        // all is well, so return our interval...
+        return rspMsg.rebootInterval;
+    }
+
+
+    /**
+     * Returns the value in the given table and field as the given type.  If the swath is one, the value is returned as the single value.  Otherwise,
+     * the value is returned as an array of the given field type.
+     *
+     * @param _tableName the table name to get the value from
+     * @param _fieldName the field name to get the value from
+     * @param _fieldType the type to convert the returned value to
+     * @param _swath the number of values to return (>1 for array fields)
+     * @return  the datum containing the value requested, or null if there was an error
+     */
+    public Datum getValues( final String _tableName, final String _fieldName, final PakBusType _fieldType, final int _swath ) {
+
+        // sanity checks...
+        Checks.required( _tableName, _fieldName, _fieldType );
+        if( _swath < 1 )
+            throw new IllegalArgumentException( "Illegal value for swath: " + _swath );
+
+        // send our request and wait for an answer...
+        Msg msg = new GetValuesReqMsg( 0, _tableName, _fieldName, _fieldType, _swath, new RequestContext() );
+        Transaction trans = sendRequest( msg, GetValuesRspMsg.class, 5 );
+
+        // wait for our response, or a bad response...
+        try { trans.waiter.acquire(); } catch( InterruptedException _e ) { return null; }
+
+        // if we got no response, just leave...
+        if( trans.response == null ) return null;
+
+        // if we got a bad response code, just leave...
+        GetValuesReqMsg reqMsg = (GetValuesReqMsg)trans.request;
+        GetValuesRspMsg rspMsg = (GetValuesRspMsg)trans.response;
+        if( rspMsg.responseCode != ResponseCode.OK )
+            return null;
+
+        // all is well, so make a datum of the right type...
+        DataType dataType = DataTypes.fromPakBusType( reqMsg.fieldType );
+        Datum result;
+        if( _swath > 1 ) {
+            ArrayDataType arrayDataType = new ArrayDataType( "ARRAY", null, dataType );
+            result = new ArrayDatum( arrayDataType );
+        }
+        else {
+            if( dataType instanceof SimpleDataType ) result = new SimpleDatum( dataType );
+            else if( dataType instanceof ArrayDataType ) result = new ArrayDatum( dataType );
+            else result = new CompositeDatum( dataType );
+        }
+
+        // then stuff the result in and leave...
+        result.set( new BitBuffer( rspMsg.bytes ) );
+        return result;
+    }
+
+
+    /**
+     * Returns the value in the given table and field as the given type in the returned datum.
+     *
+     * @param _tableName the table name to get the value from
+     * @param _fieldName the field name to get the value from
+     * @param _fieldType the type to convert the returned value to
+     * @return  the datum containing the value requested, or null if there was an error
+     */
+    public Datum getValues( final String _tableName, final String _fieldName, final PakBusType _fieldType ) {
+        return getValues( _tableName, _fieldName, _fieldType, 1 );
+    }
+
+
+    /**
      * Returns all settings in the datalogger as a map of setting names to their values.
      *
      * @return a map of setting names to their values
@@ -312,23 +415,125 @@ public class Datalogger {
     }
 
 
-    public Datum collectMostRecent( final DataQuery _query, final int _records ) {
+    /**
+     * Collects all available records from the table and fields specified in the given data query.  The collected records are returned in a list of
+     * {@link Datum} instances, in the order that they were collected in.  Each of the collected records has two properties in addition to all the
+     * requested fields.  The first is named "Timestamp", and it is the timestamp from the datalogger indicating when the record was collected.  The
+     * second is named "RecordNumber", and it is a four byte unsigned integer with the datalogger's record number for the record.  Note that a single
+     * call to this method may result in multiple request/response transactions with the datalogger, as the cumulative size of the requested records
+     * may exceed what the datalogger can return in a single message.
+     *
+     * @param _query the query specifying the table and fields to collect data from
+     * @return the list of collected records
+     */
+    public List<Datum> collectAll( final DataQuery _query ) {
+        CollectDataReqMsg msg = CollectDataReqMsg.getAll( _query, 0, new RequestContext() );
+        return collectRecords( _query, msg );
+    }
+
+
+    /**
+     * Collects records starting with the given record number and ending with the most recent record, from the table and fields specified in the given
+     * data query.  The collected records are returned in a list of {@link Datum} instances, in the order that they were collected in.  Each of the
+     * collected records has two properties in addition to all the requested fields.  The first is named "Timestamp", and it is the timestamp from the
+     * datalogger indicating when the record was collected.  The second is named "RecordNumber", and it is a four byte unsigned integer with the
+     * datalogger's record number for the record. Note that a single call to this method may result in multiple request/response transactions with the
+     * datalogger, as the cumulative size of the requested records may exceed what the datalogger can return in a single message.
+     *
+     * @param _query the query specifying the table and fields to collect data from
+     * @param _recordNumber the first record number to collect
+     * @return the list of collected records
+     */
+    public List<Datum> collectFromRecordNumber( final DataQuery _query, final int _recordNumber ) {
+        CollectDataReqMsg msg = CollectDataReqMsg.getFromRecordNumber( _query, 0, _recordNumber, new RequestContext() );
+        return collectRecords( _query, msg );
+    }
+
+
+    /**
+     * Collects records starting with the given starting record number and ending with the last record number before the given ending record, from the
+     * table and fields specified in the given data query.  The collected records are returned in a list of {@link Datum} instances, in the order that
+     * they were collected in.  Each of the collected records has two properties in addition to all the requested fields.  The first is named
+     * "Timestamp", and it is the timestamp from the datalogger indicating when the record was collected.  The second is named "RecordNumber", and it
+     * is a four byte unsigned integer with the datalogger's record number for the record. Note that a single call to this method may result in
+     * multiple request/response transactions with the datalogger, as the cumulative size of the requested records may exceed what the datalogger can
+     * return in a single message.
+     *
+     * @param _query the query specifying the table and fields to collect data from
+     * @param _startRecord the first record number to collect
+     * @param _endRecord the first record number to <i>not</i> collect
+     * @return the list of collected records
+     */
+    public List<Datum> collectRangeOfRecordNumbers( final DataQuery _query, final int _startRecord, final int _endRecord ) {
+        CollectDataReqMsg msg = CollectDataReqMsg.getRangeOfRecordNumbers( _query, 0, _startRecord, _endRecord, new RequestContext() );
+        return collectRecords( _query, msg );
+    }
+
+
+    /**
+     * Collects records starting with the given starting timestamp and ending with the last timestamp before the given ending record, from the table
+     * and fields specified in the given data query.  The collected records are returned in a list of {@link Datum} instances, in the order that they
+     * were collected in.  Each of the collected records has two properties in addition to all the requested fields.  The first is named "Timestamp",
+     * and it is the timestamp from the datalogger indicating when the record was collected.  The second is named "RecordNumber", and it is a four
+     * byte unsigned integer with the datalogger's record number for the record. Note that a single call to this method may result in multiple
+     * request/response transactions with the datalogger, as the cumulative size of the requested records may exceed what the datalogger can return in
+     * a single message.
+     *
+     * @param _query the query specifying the table and fields to collect data from
+     * @param _startRecord the first timestamp to collect
+     * @param _endRecord the first timestamp to <i>not</i> collect
+     * @return the list of collected records
+     */
+    public List<Datum> collectRangeOfTimestamps( final DataQuery _query, final NSec _startRecord, final NSec _endRecord ) {
+        CollectDataReqMsg msg = CollectDataReqMsg.getRangeOfTimestamps( _query, 0, _startRecord, _endRecord, new RequestContext() );
+        return collectRecords( _query, msg );
+    }
+
+
+    /**
+     * Collects the given number of the most recent records from the table and fields specified in the given data query.  The collected records are
+     * returned in a list of {@link Datum} instances, in the order that they were collected in.  Each of the collected records has two properties in
+     * addition to all the requested fields.  The first is named "Timestamp", and it is the timestamp from the datalogger indicating when the record
+     * was collected.  The second is named "RecordNumber", and it is a four byte unsigned integer with the datalogger's record number for the record.
+     * Note that a single call to this method may result in multiple request/response transactions with the datalogger, as the cumulative size of the
+     * requested records may exceed what the datalogger can return in a single message.
+     *
+     * @param _query the query specifying the table and fields to collect data from
+     * @param _records the number of the most recent records to collect
+     * @return the list of collected records
+     */
+    public List<Datum> collectMostRecent( final DataQuery _query, final int _records ) {
+        CollectDataReqMsg msg = CollectDataReqMsg.getMostRecent( _query, 0, _records, new RequestContext() );
+        return collectRecords( _query, msg );
+    }
+
+
+    /**
+     * Collects the data returned in response to the given query and message.
+     *
+     * @param _query the query specifying the table and fields to collect data from
+     * @param _reqMsg the request message to initiate collection with
+     * @return the list of collected records
+     */
+    public List<Datum> collectRecords( final DataQuery _query, final CollectDataReqMsg _reqMsg ) {
 
         // sanity check...
         Checks.required( _query );
 
+        // our per-record data type...
+        CompositeDataType[] recType = null;
+
         // some setup...
-        TableDefinitions tds = getTableDefinitions();
-        ByteBuffer buffer = ByteBuffer.allocate( 1000 );
+        List<Datum> result = new ArrayList<>();
         boolean done = false;
-        Msg msg = CollectDataReqMsg.getMostRecent( _query, 0, _records, new RequestContext() );
+        Msg msg = _reqMsg;
         Transaction trans = null;
         CollectDataRspMsg rspMsg = null;
 
-        // loop until we get all the bytes...
+        // loop until we get all the records...
         while( !done ) {
 
-            // get our message...
+            // send our request...
             trans = sendRequest( msg, CollectDataRspMsg.class, 10 );
 
             // wait for our response, or a bad response (in which case we return with nothing)...
@@ -340,58 +545,156 @@ public class Datalogger {
             // otherwise, hopefully we got a chunk of data...
             rspMsg = (CollectDataRspMsg) trans.response;
 
-            // if we got an error, just leave with nothing...
+            // if we got an error from the datalogger, just leave with nothing...
             if( rspMsg.responseCode != ResponseCode.OK )
                 return null;
 
-            // add the data in the message to our buffer, expanding it as required...
-            if( rspMsg.bytes.limit() > buffer.remaining() ) {
-                ByteBuffer newBuffer = ByteBuffer.allocate( buffer.capacity() + 1000 );
-                buffer.flip();
-                newBuffer.put( buffer );
-                buffer = newBuffer;
-            }
-            buffer.put( rspMsg.bytes );
+            // if we haven't already computed our record's type, do so now...
+            if( recType == null ) recType = getRecordDataType( trans );
 
-            // if we have no fragment, we're done...
-            if( !rspMsg.isFragment )
+            // loop through the response until we've decoded all the blocks in it...
+            BitBuffer rspBits = new BitBuffer( rspMsg.bytes );
+            while( rspBits.remaining() > 0 ) {
+
+                // decode the block header...
+                CompositeDatum header = new CompositeDatum( BLOCK_HEADER );
+                header.set( rspBits );
+
+                // if we got a fragment, error as we're not supporting these (yet)...
+                // TODO: implement fragmented data collection records...
+                if( header.at( FIELD_IS_OFFSET ).getAsBoolean() )
+                    throw new UnsupportedOperationException( "Collecting data record fragments is not supported" );
+
+                // decode the header...
+                int recordNumber    = header.at( FIELD_FIRST_RECORD_NUMBER ).getAsInt();
+                int tableNumber     = header.at( FIELD_TABLE_NUMBER ).getAsInt();
+                int numberOfRecords = header.at( FIELD_RECORD_COUNT ).getAsInt();
+
+                // decode all the records in this block
+                for( int record = 0; record < numberOfRecords; record++ ) {
+
+                    // decode a record, using the deserialization type...
+                    CompositeDatum datum = new CompositeDatum( recType[0] );
+                    datum.set( rspBits );
+
+                    // now switch the type to the presentation type, and set the record number...
+                    datum.changeTypeTo( recType[1] );
+                    datum.at( FIELD_RECORD_NUMBER ).setTo( recordNumber );
+
+                    // add it to our result...
+                    result.add( datum );
+
+                    // bump our record number, to the next one in the block (if there are any)...
+                    recordNumber++;
+                }
+            }
+
+            // if there are no more records, we're done...
+            if( !rspMsg.moreRecords )
                 done = true;
 
-            // if it is a fragment, we'll just error out...
-            else
-                throw new UnsupportedOperationException( "Collecting data record fragments is not supported (yet)" );
+            // otherwise, we need to send another request...
+            else {
 
+                Log.logLn( "Collecting supplementary record..." );
+
+                // some setup...
+                CollectDataReqMsg reqMsg = (CollectDataReqMsg)trans.request;
+                Datum lastRec = result.get( result.size() - 1 );
+                int startRec = 1 + lastRec.at( FIELD_RECORD_NUMBER ).getAsInt();
+                NSec startTime = lastRec.at( FIELD_TIMESTAMP ).getAsNSec().add( new NSec( 1, 0 ) );
+
+                // how we handle this depends on the mode of the collection request...
+                if( (reqMsg.mode == 3) || (reqMsg.mode == 4) || (reqMsg.mode == 5) )
+                    msg = CollectDataReqMsg.getFromRecordNumber( _query, 0, startRec, new RequestContext() );
+                else if( reqMsg.mode == 6 )
+                    msg = CollectDataReqMsg.getRangeOfRecordNumbers( _query, 0, startRec, reqMsg.intP2, new RequestContext() );
+                else if( reqMsg.mode == 7 )
+                    msg = CollectDataReqMsg.getRangeOfTimestamps( _query, 0, startTime, reqMsg.nsecP2, new RequestContext() );
+                else
+                    throw new UnsupportedOperationException( "Unsupported collection mode: " + reqMsg.mode );
+            }
         }
+        return result;
+    }
 
-        // we've got our bytes; now we need to interpret them...
-        buffer.flip();
-        DataQuery query = ((CollectDataReqMsg)trans.request).query;
-        TableDefinition td = tds.getTableDef( rspMsg.tableNumber );
 
-        // make up our per-record data type...
+    final static private String FIELD_TABLE_NUMBER        = "TableNumber";
+    final static private String FIELD_FIRST_RECORD_NUMBER = "FirstRecordNumber";
+    final static private String FIELD_IS_OFFSET           = "IsOffset";
+    final static private String FIELD_RECORD_COUNT        = "RecordCount";
+    final static private String FIELD_TIMESTAMP           = "Timestamp";
+    final static private String FIELD_RECORD_NUMBER       = "RecordNumber";
+
+    final static private CompositeDataType BLOCK_HEADER = new CompositeDataType( "BLOCK_HEADER", null,
+            new CP( FIELD_TABLE_NUMBER,        UINT2  ),
+            new CP( FIELD_FIRST_RECORD_NUMBER, UINT4  ),
+            new CP( FIELD_IS_OFFSET,           BIT    ),
+            new CP( FIELD_RECORD_COUNT,        BITS15 ) );
+
+
+    /**
+     * Returns the data types for the kind of record we're collecting.  An array with two data types is returned.  The first has all the correct
+     * data types for how the records are serialized; the second is identical except that it has the additional property "RecordNumber", which is
+     * synthetic and not part of the
+     *
+     * @return the deserialization and presentation data types
+     */
+    private CompositeDataType[] getRecordDataType( final Transaction _trans ) {
+
+        // retrieve the query we made from the request message...
+        DataQuery query = ((CollectDataReqMsg)_trans.request).query;
+
+        // some setup...
+        TableDefinitions tds = getTableDefinitions();  // ensure that we've loaded table definitions...
+        TableDefinition td = tds.getTableDef( query.tableIndex );
         boolean allFields = (0 == query.fieldsSize());
         List<CP> cps = new ArrayList<>();
-        cps.add( new CP( "Timestamp", DataTypes.fromPakBusType( PakBusType.decode( td.timeType ) ) ) );
+
+        // add the timestamp field...
+        cps.add( new CP( FIELD_TIMESTAMP, DataTypes.fromPakBusType( PakBusType.decode( td.timeType ) ) ) );
+
+        // if the query has an empty field list, then we're collecting ALL the fields in that record...
         if( allFields ) {
             for( int fn = 1; fn <= td.fieldSize(); fn++ ) {
                 FieldDefinition fd = td.getField( fn - 1 );
-                cps.add( new CP( fd.name, DataTypes.fromPakBusType( PakBusType.decode( fd.fieldType ) ) ) );
+                cps.add( getField( fd ) );
             }
         }
+
+        // otherwise we're collecting only the specified fields...
         else {
-            FieldIterator fi = query.iterator();
+            DataQuery.FieldIterator fi = query.iterator();
             while( fi.hasNext() ) {
                 FieldDefinition fd = td.getField( ((Integer)fi.next()) - 1 );
-                cps.add( new CP( fd.name, DataTypes.fromPakBusType( PakBusType.decode( fd.fieldType ) ) ) );
+                cps.add( getField( fd ) );
             }
         }
-        CompositeDataType recType = new CompositeDataType( "REC_TYPE", null, cps );
-        ArrayDataType arrayType = new ArrayDataType( "Records", null, recType );
 
-        Datum datum = new ArrayDatum( arrayType );
-        datum.set( new BitBuffer( buffer ) );
+        // we've got all the fields, so create our deserialization type...
+        CompositeDataType[] result = new CompositeDataType[2];
+        result[0] = new CompositeDataType( "REC_TYPE", null, cps );
 
-        return datum;
+        // now add the record number field and create our presentation type...
+        cps.add( 0, new CP( FIELD_RECORD_NUMBER, UINT4 ) );
+        result[1] = new CompositeDataType( "REC_TYPE", null, cps );
+
+        // and we're outta here...
+        return result;
+    }
+
+
+    private CP getField( final FieldDefinition _fieldDefinition ) {
+
+        // get our base type...
+        DataType dataType = DataTypes.fromPakBusType( PakBusType.decode( _fieldDefinition.fieldType ) );
+
+        // if it's not an array, just return a simple type...
+        if( _fieldDefinition.pieceSize == 1 )
+            return new CP( _fieldDefinition.name, dataType );
+
+        // otherwise, make an array...
+        return new CP( _fieldDefinition.name, new ArrayDataType( "ARRAY", null, dataType, _fieldDefinition.pieceSize ) );
     }
 
 
@@ -438,6 +741,10 @@ public class Datalogger {
         Checks.required( _msg );
 
         application.send( _msg );
+    }
+
+
+    private static class BITS15 {
     }
 
 

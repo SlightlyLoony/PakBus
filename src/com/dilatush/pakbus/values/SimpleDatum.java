@@ -204,4 +204,18 @@ public class SimpleDatum extends ADatum {
         else
             return (double) getAsLong();
     }
+
+
+    @Override
+    public String toString() {
+
+        switch( type.generalType() ) {
+            case String:          return getAsString();
+            case Float:           return Double.toString( getAsDouble() );
+            case SignedInteger:   return Long.toString( getAsLong() );
+            case UnsignedInteger: return Long.toUnsignedString( getAsLong() );
+            case Boolean:         return (getAsLong() == 0) ? "false" : "true";
+            default:              return "unknown";
+        }
+    }
 }
