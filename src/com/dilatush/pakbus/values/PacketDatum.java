@@ -1,9 +1,8 @@
-package com.dilatush.pakbus;
+package com.dilatush.pakbus.values;
 
 import com.dilatush.pakbus.types.CP;
 import com.dilatush.pakbus.types.CompositeDataType;
 import com.dilatush.pakbus.types.DataType;
-import com.dilatush.pakbus.values.CompositeDatum;
 
 import static com.dilatush.pakbus.types.DataTypes.*;
 

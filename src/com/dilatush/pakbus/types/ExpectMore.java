@@ -1,4 +1,4 @@
-package com.dilatush.pakbus;
+package com.dilatush.pakbus.types;
 
 /**
  * Represents all possible values of the "expect more" field in a PakBus packet.

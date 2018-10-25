@@ -1,12 +1,16 @@
 package com.dilatush.pakbus.messages.serpkt;
 
-import com.dilatush.pakbus.*;
 import com.dilatush.pakbus.comms.Context;
+import com.dilatush.pakbus.comms.Packet;
 import com.dilatush.pakbus.messages.AMsg;
+import com.dilatush.pakbus.types.ExpectMore;
+import com.dilatush.pakbus.types.LinkState;
+import com.dilatush.pakbus.types.Priority;
+import com.dilatush.pakbus.values.PacketOptions;
 
-import static com.dilatush.pakbus.LinkState.Ready;
-import static com.dilatush.pakbus.MessageType.*;
-import static com.dilatush.pakbus.Protocol.SerPkt;
+import static com.dilatush.pakbus.types.LinkState.Ready;
+import static com.dilatush.pakbus.types.MessageType.*;
+import static com.dilatush.pakbus.types.Protocol.SerPkt;
 
 /**
  * Represents a SerPkt "Ring" message.

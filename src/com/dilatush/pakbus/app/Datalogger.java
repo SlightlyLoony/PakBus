@@ -1,8 +1,8 @@
 package com.dilatush.pakbus.app;
 
-import com.dilatush.pakbus.HopCount;
-import com.dilatush.pakbus.NSec;
-import com.dilatush.pakbus.Node;
+import com.dilatush.pakbus.values.HopCount;
+import com.dilatush.pakbus.values.NSec;
+import com.dilatush.pakbus.values.Node;
 import com.dilatush.pakbus.comms.Context;
 import com.dilatush.pakbus.comms.SimpleContext;
 import com.dilatush.pakbus.messages.Msg;

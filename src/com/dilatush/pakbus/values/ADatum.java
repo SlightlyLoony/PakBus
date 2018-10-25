@@ -1,6 +1,5 @@
 package com.dilatush.pakbus.values;
 
-import com.dilatush.pakbus.NSec;
 import com.dilatush.pakbus.types.DataType;
 import com.dilatush.pakbus.types.DataTypes;
 import com.dilatush.pakbus.types.GeneralDataType;

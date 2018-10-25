@@ -1,5 +1,8 @@
-package com.dilatush.pakbus;
+package com.dilatush.pakbus.values;
 
+import com.dilatush.pakbus.types.ExpectMore;
+import com.dilatush.pakbus.types.LinkState;
+import com.dilatush.pakbus.types.Priority;
 import com.dilatush.pakbus.util.Checks;
 
 /**
@@ -9,9 +12,9 @@ import com.dilatush.pakbus.util.Checks;
  */
 public class PacketOptions {
 
-    final public LinkState  state;
+    final public LinkState state;
     final public ExpectMore expectMore;
-    final public Priority   priority;
+    final public Priority priority;
 
 
     /**

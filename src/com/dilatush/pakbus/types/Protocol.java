@@ -1,4 +1,4 @@
-package com.dilatush.pakbus;
+package com.dilatush.pakbus.types;
 
 /**
  * Represents all possible values for the protocol in a PakBus packet.

@@ -1,4 +1,4 @@
-package com.dilatush.pakbus;
+package com.dilatush.pakbus.types;
 
 /**
  * @author Tom Dilatush  tom@dilatush.com

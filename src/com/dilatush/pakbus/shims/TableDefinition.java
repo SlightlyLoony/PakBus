@@ -1,6 +1,6 @@
 package com.dilatush.pakbus.shims;
 
-import com.dilatush.pakbus.NSec;
+import com.dilatush.pakbus.values.NSec;
 import com.dilatush.pakbus.comms.Signature;
 import com.dilatush.pakbus.util.Checks;
 import com.dilatush.pakbus.values.ArrayDatum;

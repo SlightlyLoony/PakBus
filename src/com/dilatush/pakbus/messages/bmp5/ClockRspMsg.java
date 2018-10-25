@@ -1,8 +1,8 @@
 package com.dilatush.pakbus.messages.bmp5;
 
-import com.dilatush.pakbus.MessageType;
-import com.dilatush.pakbus.NSec;
-import com.dilatush.pakbus.Protocol;
+import com.dilatush.pakbus.types.MessageType;
+import com.dilatush.pakbus.values.NSec;
+import com.dilatush.pakbus.types.Protocol;
 import com.dilatush.pakbus.comms.Context;
 import com.dilatush.pakbus.messages.AMsg;
 import com.dilatush.pakbus.types.CP;
@@ -13,8 +13,8 @@ import com.dilatush.pakbus.values.CompositeDatum;
 
 import java.nio.ByteBuffer;
 
-import static com.dilatush.pakbus.MessageType.Response;
-import static com.dilatush.pakbus.Protocol.BMP5;
+import static com.dilatush.pakbus.types.MessageType.Response;
+import static com.dilatush.pakbus.types.Protocol.BMP5;
 import static com.dilatush.pakbus.messages.bmp5.ResponseCode.OK;
 
 /**

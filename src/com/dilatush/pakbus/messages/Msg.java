@@ -1,7 +1,10 @@
 package com.dilatush.pakbus.messages;
 
-import com.dilatush.pakbus.*;
 import com.dilatush.pakbus.comms.Context;
+import com.dilatush.pakbus.comms.Packet;
+import com.dilatush.pakbus.types.MessageType;
+import com.dilatush.pakbus.types.Protocol;
+import com.dilatush.pakbus.values.PacketOptions;
 
 import java.nio.ByteBuffer;
 

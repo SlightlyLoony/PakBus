@@ -1,8 +1,8 @@
 package com.dilatush.pakbus.messages.pakctrl;
 
-import com.dilatush.pakbus.MessageType;
-import com.dilatush.pakbus.NSec;
-import com.dilatush.pakbus.Protocol;
+import com.dilatush.pakbus.types.MessageType;
+import com.dilatush.pakbus.values.NSec;
+import com.dilatush.pakbus.types.Protocol;
 import com.dilatush.pakbus.comms.Context;
 import com.dilatush.pakbus.messages.AMsg;
 import com.dilatush.pakbus.types.CP;
@@ -13,8 +13,8 @@ import com.dilatush.pakbus.values.CompositeDatum;
 
 import java.nio.ByteBuffer;
 
-import static com.dilatush.pakbus.MessageType.Broadcast;
-import static com.dilatush.pakbus.Protocol.PakCtrl;
+import static com.dilatush.pakbus.types.MessageType.Broadcast;
+import static com.dilatush.pakbus.types.Protocol.PakCtrl;
 
 /**
  * Represents a PakCtrl "Clock Notification" message.

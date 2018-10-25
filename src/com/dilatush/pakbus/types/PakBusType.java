@@ -1,16 +1,14 @@
 package com.dilatush.pakbus.types;
 
-import com.dilatush.pakbus.PakBusBaseDataType;
-
 import java.lang.String;
 import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.dilatush.pakbus.PakBusBaseDataType.*;
-import static com.dilatush.pakbus.PakBusBaseDataType.Boolean;
-import static com.dilatush.pakbus.PakBusBaseDataType.Float;
-import static com.dilatush.pakbus.PakBusBaseDataType.String;
+import static com.dilatush.pakbus.types.PakBusBaseDataType.*;
+import static com.dilatush.pakbus.types.PakBusBaseDataType.Boolean;
+import static com.dilatush.pakbus.types.PakBusBaseDataType.Float;
+import static com.dilatush.pakbus.types.PakBusBaseDataType.String;
 import static java.nio.ByteOrder.BIG_ENDIAN;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 

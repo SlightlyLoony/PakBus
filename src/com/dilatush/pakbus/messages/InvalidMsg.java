@@ -1,7 +1,7 @@
 package com.dilatush.pakbus.messages;
 
-import static com.dilatush.pakbus.MessageType.Request;
-import static com.dilatush.pakbus.Protocol.INVALID;
+import static com.dilatush.pakbus.types.MessageType.Request;
+import static com.dilatush.pakbus.types.Protocol.INVALID;
 
 /**
  * Represents an "Invalid" message.  Invalid messages are created when decoding a message fails.

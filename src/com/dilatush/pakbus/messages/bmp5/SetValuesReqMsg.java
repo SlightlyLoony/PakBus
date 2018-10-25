@@ -1,7 +1,7 @@
 package com.dilatush.pakbus.messages.bmp5;
 
-import com.dilatush.pakbus.MessageType;
-import com.dilatush.pakbus.Protocol;
+import com.dilatush.pakbus.types.MessageType;
+import com.dilatush.pakbus.types.Protocol;
 import com.dilatush.pakbus.comms.Context;
 import com.dilatush.pakbus.messages.AMsg;
 import com.dilatush.pakbus.types.CP;
@@ -11,8 +11,8 @@ import com.dilatush.pakbus.util.Checks;
 import com.dilatush.pakbus.values.ArrayDatum;
 import com.dilatush.pakbus.values.Datum;
 
-import static com.dilatush.pakbus.MessageType.Request;
-import static com.dilatush.pakbus.Protocol.BMP5;
+import static com.dilatush.pakbus.types.MessageType.Request;
+import static com.dilatush.pakbus.types.Protocol.BMP5;
 
 /**
  * Represents a BMP5 "Set Values Request" message.

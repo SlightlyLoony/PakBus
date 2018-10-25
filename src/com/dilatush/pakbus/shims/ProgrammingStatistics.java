@@ -1,6 +1,6 @@
 package com.dilatush.pakbus.shims;
 
-import com.dilatush.pakbus.NSec;
+import com.dilatush.pakbus.values.NSec;
 import com.dilatush.pakbus.types.CP;
 import com.dilatush.pakbus.types.CompositeDataType;
 import com.dilatush.pakbus.types.DataTypes;

@@ -1,7 +1,7 @@
 package com.dilatush.pakbus.example;
 
-import com.dilatush.pakbus.Address;
-import com.dilatush.pakbus.Node;
+import com.dilatush.pakbus.values.Address;
+import com.dilatush.pakbus.values.Node;
 import com.dilatush.pakbus.app.Application;
 import com.dilatush.pakbus.app.Datalogger;
 import com.dilatush.pakbus.comms.PacketTransceiver;

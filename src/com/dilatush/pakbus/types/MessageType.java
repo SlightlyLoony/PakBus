@@ -1,4 +1,4 @@
-package com.dilatush.pakbus;
+package com.dilatush.pakbus.types;
 
 /**
  * Enumerates all possible types of messages.

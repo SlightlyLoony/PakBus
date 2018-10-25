@@ -1,7 +1,7 @@
 package com.dilatush.pakbus.messages.pakctrl;
 
-import com.dilatush.pakbus.MessageType;
-import com.dilatush.pakbus.Protocol;
+import com.dilatush.pakbus.types.MessageType;
+import com.dilatush.pakbus.types.Protocol;
 import com.dilatush.pakbus.comms.Context;
 import com.dilatush.pakbus.messages.AMsg;
 import com.dilatush.pakbus.types.CP;
@@ -15,8 +15,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.dilatush.pakbus.MessageType.Response;
-import static com.dilatush.pakbus.Protocol.PakCtrl;
+import static com.dilatush.pakbus.types.MessageType.Response;
+import static com.dilatush.pakbus.types.Protocol.PakCtrl;
 
 /**
  * Represents a PakCtrl "Get String Settings Response" message.

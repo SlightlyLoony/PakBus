@@ -1,18 +1,20 @@
-package com.dilatush.pakbus;
+package com.dilatush.pakbus.comms;
 
 import com.dilatush.pakbus.app.Datalogger;
-import com.dilatush.pakbus.comms.Context;
-import com.dilatush.pakbus.comms.RawPacket;
 import com.dilatush.pakbus.messages.Msg;
+import com.dilatush.pakbus.types.ExpectMore;
+import com.dilatush.pakbus.types.LinkState;
+import com.dilatush.pakbus.types.Priority;
+import com.dilatush.pakbus.types.Protocol;
 import com.dilatush.pakbus.util.BitBuffer;
 import com.dilatush.pakbus.util.Checks;
-import com.dilatush.pakbus.values.Datum;
+import com.dilatush.pakbus.values.*;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-import static com.dilatush.pakbus.Protocol.BMP5;
-import static com.dilatush.pakbus.Protocol.PakCtrl;
+import static com.dilatush.pakbus.types.Protocol.BMP5;
+import static com.dilatush.pakbus.types.Protocol.PakCtrl;
 
 /**
  * Instances of this class represent a Campbell Scientific PakBus packet, the lowest level of their datalogger communication protocol.  This class

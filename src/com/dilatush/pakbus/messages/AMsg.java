@@ -1,9 +1,9 @@
 package com.dilatush.pakbus.messages;
 
-import com.dilatush.pakbus.MessageType;
-import com.dilatush.pakbus.Packet;
-import com.dilatush.pakbus.PacketOptions;
-import com.dilatush.pakbus.Protocol;
+import com.dilatush.pakbus.types.MessageType;
+import com.dilatush.pakbus.comms.Packet;
+import com.dilatush.pakbus.values.PacketOptions;
+import com.dilatush.pakbus.types.Protocol;
 import com.dilatush.pakbus.comms.Context;
 import com.dilatush.pakbus.types.CP;
 import com.dilatush.pakbus.types.CompositeDataType;
@@ -13,9 +13,9 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.dilatush.pakbus.Protocol.BMP5;
-import static com.dilatush.pakbus.Protocol.PakCtrl;
-import static com.dilatush.pakbus.Protocol.SerPkt;
+import static com.dilatush.pakbus.types.Protocol.BMP5;
+import static com.dilatush.pakbus.types.Protocol.PakCtrl;
+import static com.dilatush.pakbus.types.Protocol.SerPkt;
 import static com.dilatush.pakbus.types.DataTypes.BYTE;
 
 /**

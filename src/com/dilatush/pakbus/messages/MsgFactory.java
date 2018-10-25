@@ -1,17 +1,22 @@
 package com.dilatush.pakbus.messages;
 
-import com.dilatush.pakbus.*;
 import com.dilatush.pakbus.comms.Context;
+import com.dilatush.pakbus.comms.Packet;
 import com.dilatush.pakbus.messages.bmp5.*;
 import com.dilatush.pakbus.messages.pakctrl.*;
 import com.dilatush.pakbus.messages.serpkt.ReadyMsg;
 import com.dilatush.pakbus.messages.serpkt.RingMsg;
+import com.dilatush.pakbus.types.LinkState;
+import com.dilatush.pakbus.types.Protocol;
 import com.dilatush.pakbus.util.Checks;
+import com.dilatush.pakbus.values.Address;
+import com.dilatush.pakbus.values.HopCount;
+import com.dilatush.pakbus.values.PacketDatum;
 
 import java.nio.ByteBuffer;
 
-import static com.dilatush.pakbus.Protocol.PakCtrl;
-import static com.dilatush.pakbus.Protocol.SerPkt;
+import static com.dilatush.pakbus.types.Protocol.PakCtrl;
+import static com.dilatush.pakbus.types.Protocol.SerPkt;
 
 /**
  * Provides a factory method for creating a message ({@link Msg} instance) from a packet.  This would typically be used to decode a received packet.

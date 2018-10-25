@@ -1,4 +1,4 @@
-package com.dilatush.pakbus;
+package com.dilatush.pakbus.values;
 
 import com.dilatush.pakbus.util.Checks;
 
