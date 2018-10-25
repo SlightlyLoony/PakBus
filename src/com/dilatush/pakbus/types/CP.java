@@ -1,5 +1,7 @@
 package com.dilatush.pakbus.types;
 
+import com.dilatush.pakbus.util.Checks;
+
 /**
  * Instances of this class specify a property in a composite data type constructor.  The name (CP) is short for "Composite Property".  Instances of
  * this class are immutable and threadsafe.
@@ -21,6 +23,11 @@ public class CP {
      * @param _optional true if the property being specified is optional; false if it is required
      */
     public CP( final String _name, final DataType _type, final boolean _optional ) {
+
+        // sanity checks...
+        Checks.required( _type );
+        Checks.notEmpty( _name );
+
         name = _name;
         type = _type;
         optional = _optional;
@@ -35,9 +42,6 @@ public class CP {
      */
     public CP( final String _name, final DataType _type ) {
         this( _name, _type, false);
-
-        if( (_name == null) || (_name.length() == 0) || (_type == null) )
-            throw new IllegalArgumentException( "Required parameter missing" );
     }
 
 

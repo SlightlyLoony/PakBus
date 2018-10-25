@@ -1,6 +1,6 @@
 package com.dilatush.pakbus.comms;
 
-import com.dilatush.pakbus.Log;
+import com.dilatush.pakbus.util.Checks;
 import com.fazecast.jSerialComm.SerialPort;
 
 import java.time.Duration;
@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.logging.Logger;
 
 /**
  * Instances of this class are serial transceivers that send and receive data through a serial port.  This class is dependent on
@@ -17,7 +18,7 @@ import java.util.concurrent.LinkedBlockingDeque;
  */
 public class PortSerialTransceiver implements SerialTransceiver {
 
-    final static public boolean DEBUG = false;
+    final static private Logger LOGGER = Logger.getLogger( PortSerialTransceiver.class.getSimpleName() );
 
     final static public int STOP_BITS_ONE            = 1;
     final static public int STOP_BITS_ONE_POINT_FIVE = 2;
@@ -57,8 +58,8 @@ public class PortSerialTransceiver implements SerialTransceiver {
     private PortSerialTransceiver( final SerialPort _port ) {
 
         // sanity check...
-        if( (_port == null) || (!_port.isOpen()) )
-            throw new IllegalArgumentException( "Missing serial port, or it is not open" );
+        Checks.required( _port );
+        Checks.isTrue( _port.isOpen(), "Serial port is not open" );
 
         // some setup...
         port = _port;
@@ -93,18 +94,12 @@ public class PortSerialTransceiver implements SerialTransceiver {
                                   final int _stopBitCode, final int _parityCode, final int _flowControlCode ) {
 
         // sanity checks...
-        if( (_portSystemName == null) || (_portSystemName.length() == 0) )
-            throw new IllegalArgumentException( "Port system name is missing or empty" );
-        if( (_dataBits < 5) || (_dataBits > 8) )
-            throw new IllegalArgumentException( "Number of data bits is out of range [5..8]: " + _dataBits );
-        if( !isValidBaudRate( _baudRate ) )
-            throw new IllegalArgumentException( "Baud rate is invalid: " + _baudRate );
-        if( (_stopBitCode < STOP_BITS_ONE) || (_stopBitCode > STOP_BITS_TWO) )
-            throw new IllegalArgumentException( "Stop bit code is invalid: " + _stopBitCode );
-        if( (_parityCode < PARITY_ODD) || (_parityCode > PARITY_SPACE) )
-            throw new IllegalArgumentException( "Parity mode code is invalid: " + _parityCode );
-        if( (_flowControlCode < FLOW_CTRL_NONE) || (_flowControlCode > FLOW_CTRL_XONOFF) )
-            throw new IllegalArgumentException( "Flow control mode code is invalid: " + _flowControlCode );
+        Checks.notEmpty( _portSystemName );
+        Checks.isTrue( isValidBaudRate( _baudRate ), "Baud rate is invalid: " + _baudRate );
+        Checks.inBounds( _dataBits,   5,        8,                "Number of data bits is out of range [5..8]: " + _dataBits );
+        Checks.inBounds( _stopBitCode,     STOP_BITS_ONE,  STOP_BITS_TWO,    "Stop bit code is invalid: " + _stopBitCode                );
+        Checks.inBounds( _parityCode,      PARITY_ODD,     PARITY_SPACE,     "Parity mode code is invalid: " + _parityCode              );
+        Checks.inBounds( _flowControlCode, FLOW_CTRL_NONE, FLOW_CTRL_XONOFF, "Flow control mode code is invalid: " + _flowControlCode   );
 
         // get the port...
         SerialPort port = SerialPort.getCommPort( _portSystemName );
@@ -315,14 +310,13 @@ public class PortSerialTransceiver implements SerialTransceiver {
 
                     // if we had an error, time to shut it all down...
                     if( result != 1 ) {
-                        if( DEBUG ) Log.log( "[read error] " );
+                        LOGGER.warning( "Read error on serial port" );
                         PortSerialTransceiver.this.stop();
                         continue;
                     }
 
                     // we really got a byte, so mark the time and stuff it in our receive queue...
                     lastByte = Instant.now();
-                    if( DEBUG ) Log.log( "<" + Log.toHex2( buffer[0] ) + " " );
                     queue.putFirst( buffer[0] );
                 }
                 catch( InterruptedException _e ) {

@@ -143,8 +143,8 @@ public class TableSummaries {
      * @return the table summary at the given index
      */
     public TableSummary getTableSummary( final int _index ) {
-        if( (_index < 1) || (_index > byNumber.size() ) )
-            throw new IllegalArgumentException( "Index is out of range: " + _index + " (must be in the range [1.." + byNumber.size() + "])" );
+        Checks.inBounds( _index, 1, byNumber.size(),
+                "Index is out of range: " + _index + " (must be in the range [1.." + byNumber.size() + "])");
         return byNumber.get( _index - 1 );
     }
 }

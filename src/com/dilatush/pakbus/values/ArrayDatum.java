@@ -4,6 +4,7 @@ import com.dilatush.pakbus.types.ArrayDataType;
 import com.dilatush.pakbus.types.DataType;
 import com.dilatush.pakbus.types.DataTypes;
 import com.dilatush.pakbus.util.BitBuffer;
+import com.dilatush.pakbus.util.Checks;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -28,8 +29,7 @@ public class ArrayDatum extends ADatum {
         super( _type );
 
         // sanity check...
-        if( !(_type instanceof ArrayDataType) )
-            throw new IllegalArgumentException( "Attempted to create an ArrayDatum from a different data type: " + _type );
+        Checks.isTrue( _type instanceof ArrayDataType, "Attempted to create an ArrayDatum from a different data type: " + _type );
 
         arrayType = (ArrayDataType) type;
 
@@ -66,12 +66,10 @@ public class ArrayDatum extends ADatum {
     public void add( final Datum _element ) {
 
         // sanity check...
-        if( _element == null )
-            throw new IllegalArgumentException( "Required datum argument missing" );
-        if( arrayType.isFixedLength() )
-            throw new IllegalStateException( "Attempted to add element to fixed-length array datum" );
-        if( _element.type() != arrayType.getItemType() )
-            throw new IllegalArgumentException( "Attempted to add a " + _element.type() + " datum to a " + arrayType.getItemType() + " array" );
+        Checks.required( _element );
+        Checks.isTrue( !arrayType.isFixedLength(), "Attempted to add element to fixed-length array datum" );
+        Checks.isTrue( _element.type() == arrayType.getItemType(),
+                "Attempted to add a " + _element.type() + " datum to a " + arrayType.getItemType() + " array" );
 
         // all is ok, so do it...
         ADatum dat = (ADatum)_element;
@@ -125,9 +123,8 @@ public class ArrayDatum extends ADatum {
 
         // first we call finish() on every array element...
         array.forEach( item -> {
-
-            if( !item.isSet() & (item instanceof SimpleDatum) )
-                throw new IllegalStateException( "Attempted to finish array datum, but at least one array element was not set" );
+            Checks.isTrue( item.isSet() || (item instanceof SimpleDatum),
+                    "Attempted to finish array datum, but at least one array element was not set" );
             item.finish();
         } );
 
@@ -162,10 +159,8 @@ public class ArrayDatum extends ADatum {
     public void set( final BitBuffer _buffer ) {
 
         // sanity check...
-        if( buffer != null )
-            throw new IllegalStateException( "Attempting to set a value that has already been set" );
-        if( _buffer == null )
-            throw new IllegalArgumentException( "Required buffer argument is missing" );
+        Checks.required( _buffer );
+        Checks.isTrue( buffer == null, "Attempting to set a value that has already been set" );
 
         // we handle each type of array differently...
         // fixed-length arrays...
@@ -236,21 +231,16 @@ public class ArrayDatum extends ADatum {
     public void setTo( final String _value ) {
 
         // sanity checks...
-        if( isSet() )
-            throw new IllegalStateException( "Attempted to set a datum that's already set" );
-        if( _value == null )
-            throw new IllegalArgumentException( "String argument is missing" );
-        boolean isString = (arrayType.getItemType() == DataTypes.ASCII );
-        if( !isString )
-            throw new IllegalStateException( "Attempted to set a non-string array datum to a string" );
+        Checks.required( _value );
+        Checks.isTrue( !isSet(), "Attempted to set a datum that's already set" );
+        Checks.isTrue( arrayType.getItemType() == DataTypes.ASCII, "Attempted to set a non-string array datum to a string" );
 
         // some setup...
         byte[] strBytes = _value.getBytes( StandardCharsets.UTF_8 );
 
         // sanity check...
-        if( arrayType.isFixedLength() && (elements() != strBytes.length) )
-            throw new IllegalArgumentException( "Attempted to write " + strBytes.length + " byte string to "
-                    + elements() + " character long fixed ASCII array" );
+        Checks.isTrue( !arrayType.isFixedLength() ||(elements() == strBytes.length),
+                "Attempted to write " + strBytes.length + " byte string to " + elements() + " character long fixed ASCII array" );
 
         // get the bits we need to set the array...
         ByteBuffer bb = ByteBuffer.allocate( strBytes.length + (arrayType.isZeroTerminated() ? 1 : 0) );
@@ -275,13 +265,8 @@ public class ArrayDatum extends ADatum {
     public String getAsString() {
 
         // sanity checks...
-        if( !isSet() )
-            throw new IllegalStateException( "Attempted to get string from unset datum" );
-
-        // if we don't have an array of ASCII characters, we've got a problem...
-        boolean isString = (arrayType.getItemType() == DataTypes.ASCII );
-        if( !isString )
-            throw new IllegalStateException( "Attempted to get string from a datum that is not a string" );
+        Checks.isTrue( isSet(), "Attempted to get string from unset datum" );
+        Checks.isTrue( arrayType.getItemType() == DataTypes.ASCII, "Attempted to get string from a datum that is not a string" );
 
         // we're good, so handle them...
         StringBuilder sb = new StringBuilder();

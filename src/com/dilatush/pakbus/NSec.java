@@ -1,5 +1,7 @@
 package com.dilatush.pakbus;
 
+import com.dilatush.pakbus.util.Checks;
+
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -54,8 +56,7 @@ public class NSec {
     public NSec( final Instant _instant ) {
 
         // sanity check...
-        if( _instant == null )
-            throw new IllegalArgumentException( "Required instant is missing" );
+        Checks.required( _instant );
 
         // first we get the duration between the Campbell Scientific epoch and the given instant
         Duration delta = Duration.between( EPOCH, _instant );
@@ -79,8 +80,7 @@ public class NSec {
     public NSec( final Duration _duration ) {
 
         // sanity check...
-        if( _duration == null )
-            throw new IllegalArgumentException( "Required duration is missing" );
+        Checks.required( _duration );
 
         // range check...
         long secs = _duration.getSeconds();

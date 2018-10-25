@@ -1,5 +1,7 @@
 package com.dilatush.pakbus.comms;
 
+import com.dilatush.pakbus.util.Checks;
+
 import java.nio.ByteBuffer;
 
 /**
@@ -24,8 +26,7 @@ public class RawPacket {
     public RawPacket( final ByteBuffer _packetBytes, final Signature _packetSignature ) {
 
         // sanity checks...
-        if( (_packetBytes == null) || (_packetSignature == null) )
-            throw new IllegalArgumentException( "Missing required argument" );
+        Checks.required( _packetBytes, _packetSignature );
 
         packetBytes = _packetBytes.asReadOnlyBuffer();
         packetBytes.position( 0 );
@@ -42,8 +43,7 @@ public class RawPacket {
     public RawPacket( final ByteBuffer _packetBytes ) {
 
         // sanity checks...
-        if( (_packetBytes == null) )
-            throw new IllegalArgumentException( "Missing required argument" );
+        Checks.required( _packetBytes );
 
         // we need to generate a signature nullifier; if we don't have enough capacity we need to copy the buffer to a bigger one...
         ByteBuffer buffer = _packetBytes;

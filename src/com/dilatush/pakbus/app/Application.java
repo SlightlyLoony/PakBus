@@ -1,6 +1,5 @@
 package com.dilatush.pakbus.app;
 
-import com.dilatush.pakbus.Log;
 import com.dilatush.pakbus.NSec;
 import com.dilatush.pakbus.Node;
 import com.dilatush.pakbus.Packet;
@@ -16,6 +15,8 @@ import com.dilatush.pakbus.util.Checks;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Instances of this class implement a PakBus application.  Instances of this class are mutable and stateful, but are nevertheless threadsafe through
@@ -24,6 +25,8 @@ import java.util.Map;
  * @author Tom Dilatush  tom@dilatush.com
  */
 public class Application {
+
+    final static private Logger LOGGER = Logger.getLogger( Application.class.getSimpleName() );
 
     final public Node                    address;
 
@@ -111,7 +114,7 @@ public class Application {
      * @param _msg the broadcast message
      */
     private void broadcastHandler( final Msg _msg ) {
-        Log.logLn( "Received broadcast message from " + _msg.getPacket().getSrcAddr() );
+        LOGGER.info( "Received broadcast message from " + _msg.getPacket().getSrcAddr() );
     }
 
 
@@ -121,7 +124,7 @@ public class Application {
      * @param _msg the alien message
      */
     private void alienHandler( final Msg _msg ) {
-        Log.logLn( "Received alien packet to " + _msg.getPacket().getDstAddr() + " from " + _msg.getPacket().getSrcAddr() );
+        LOGGER.info( "Received alien packet to " + _msg.getPacket().getDstAddr() + " from " + _msg.getPacket().getSrcAddr() );
     }
 
 
@@ -131,7 +134,7 @@ public class Application {
      * @param _msg the orphan message
      */
     private void orphanHandler( final Msg _msg ) {
-        Log.logLn( "Received orphan packet from " + _msg.getPacket().getSrcAddr() );
+        LOGGER.info( "Received orphan packet from " + _msg.getPacket().getSrcAddr() );
     }
 
 
@@ -219,7 +222,7 @@ public class Application {
                 catch( Exception _e ) {
 
                     // anything else goes wrong, we just log it and keep on trucking...
-                    Log.logLn( "Unexpected exception: " + _e );
+                    LOGGER.log( Level.WARNING, "Unhandled exception, ignoring", _e );
                 }
             }
         }

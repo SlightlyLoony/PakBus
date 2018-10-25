@@ -1,5 +1,7 @@
 package com.dilatush.pakbus.types;
 
+import com.dilatush.pakbus.util.Checks;
+
 /**
  * Instances of this class represent PakBus array data types.  There are three types of PakBus arrays: fixed-length, variable-length terminated by a
  * zero, and terminated by data bounding.  Instances of this class are immutable and threadsafe.
@@ -26,8 +28,8 @@ public class ArrayDataType extends ADataType {
     public ArrayDataType( final String _name, final PakBusType _pakBusType, final DataType _itemType, final DataType _terminatorType ) {
         super( _name, _pakBusType, 0, GeneralDataType.Array, null );
 
-        if( (_itemType == null) || (_terminatorType == null) )
-            throw new IllegalArgumentException( "Required parameters missing" );
+        // sanity check...
+        Checks.required( _itemType, _terminatorType );
 
         itemType = _itemType;
         terminatorType = _terminatorType;
@@ -47,8 +49,8 @@ public class ArrayDataType extends ADataType {
     public ArrayDataType( final String _name, final PakBusType _pakBusType, final DataType _itemType, final int _length ) {
         super( _name, _pakBusType, _length * _itemType.bits(), GeneralDataType.Array, null );
 
-        if( _length < 1 )
-            throw new IllegalArgumentException( "Length of array is invalid: " + _length );
+        // sanity check...
+        Checks.inBounds( _length, 1, 1000, "Length of array is invalid: " + _length );
 
         itemType = _itemType;
         terminatorType = null;
@@ -67,8 +69,8 @@ public class ArrayDataType extends ADataType {
     public ArrayDataType( final String _name, final PakBusType _pakBusType, final DataType _itemType ) {
         super( _name, _pakBusType, 0, GeneralDataType.Array, null );
 
-        if( _itemType == null )
-            throw new IllegalArgumentException( "Required item type is missing" );
+        // sanity check...
+        Checks.required( _itemType );
 
         itemType = _itemType;
         terminatorType = null;

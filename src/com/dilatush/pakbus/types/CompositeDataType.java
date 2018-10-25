@@ -1,5 +1,7 @@
 package com.dilatush.pakbus.types;
 
+import com.dilatush.pakbus.util.Checks;
+
 import java.util.*;
 
 /**
@@ -25,8 +27,8 @@ public class CompositeDataType extends ADataType {
         super( _name, _pakBusType, 0, GeneralDataType.Composite, null );
 
         // sanity check...
-        if( (_name == null) || (_name.length() == 0) || (_specs == null) || (_specs.length == 0) )
-            throw new IllegalArgumentException( "Missing required arguments" );
+        Checks.notEmpty( _name );
+        Checks.notEmpty( _specs );
 
         // initialize our collections...
         byName = new HashMap<>( _specs.length << 1 );

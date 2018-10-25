@@ -5,6 +5,7 @@ import com.dilatush.pakbus.types.DataTypes;
 import com.dilatush.pakbus.types.GeneralDataType;
 import com.dilatush.pakbus.types.SimpleDataType;
 import com.dilatush.pakbus.util.BitBuffer;
+import com.dilatush.pakbus.util.Checks;
 import com.dilatush.pakbus.util.PakBusFloat;
 
 import java.nio.charset.StandardCharsets;
@@ -24,8 +25,7 @@ public class SimpleDatum extends ADatum {
         super( _type );
 
         // sanity check...
-        if( !(_type instanceof SimpleDataType ) )
-            throw new IllegalArgumentException( "Attempted to create a SimpleDatum from a different data type: " + _type );
+        Checks.isTrue( _type instanceof SimpleDataType, "Attempted to create a SimpleDatum from a different data type: " + _type );
     }
 
 
@@ -41,13 +41,9 @@ public class SimpleDatum extends ADatum {
     public void set( final BitBuffer _buffer ) {
 
         // sanity checks...
-        if( _buffer == null )
-            throw new IllegalArgumentException( "Required bits argument missing" );
-
-        // this is a simple type, so the bit length is known by definition; all we need to do is check for enough bits...
-        if( type.bits() > _buffer.remaining() )
-            throw new IllegalStateException( "Source has insufficient data: need " + type.bits() + " bits, but the buffer has only "
-                    + _buffer.remaining() + " bits left" );
+        Checks.required( _buffer );
+        Checks.isTrue( type.bits() <= _buffer.remaining(),
+                "Source has insufficient data: need " + type.bits() + " bits, but the buffer has only " + _buffer.remaining() + " bits left" );
 
         // get the value...
         buffer = new BitBuffer( type.bits() );
@@ -71,15 +67,11 @@ public class SimpleDatum extends ADatum {
     public void setTo( final String _value ) {
 
         // sanity checks...
-        if( isSet() )
-            throw new IllegalStateException( "Attempted to set string to a datum that's already set" );
-        if( type != DataTypes.ASCII )
-            throw new IllegalStateException( "Attempted to set string to a simple datum that's not ASCII" );
-        if( _value == null )
-            throw new IllegalArgumentException( "Value is missing" );
+        Checks.required( _value );
+        Checks.isTrue( !isSet(), "Attempted to set string to a datum that's already set" );
+        Checks.isTrue( type == DataTypes.ASCII, "Attempted to set string to a simple datum that's not ASCII" );
         byte[] strBytes = _value.getBytes( StandardCharsets.UTF_8 );
-        if( strBytes.length != 1 )
-            throw new IllegalArgumentException( "Value is not a single character long" );
+        Checks.isTrue( strBytes.length == 1, "Value is not a single character long" );
 
         // write the character code...
         setTo( strBytes[0] );
@@ -97,10 +89,8 @@ public class SimpleDatum extends ADatum {
     public String getAsString() {
 
         // sanity checks...
-        if( !isSet() )
-            throw new IllegalStateException( "Attempted to read character from unset datum" );
-        if( type != DataTypes.ASCII )
-            throw new IllegalStateException( "Attempted to read character from a simple datum that's not ASCII" );
+        Checks.isTrue( isSet(), "Attempted to read character from unset datum" );
+        Checks.isTrue( type == DataTypes.ASCII, "Attempted to read character from a simple datum that's not ASCII" );
 
         // read the character code, then make a string and we're done...
         return Character.toString( (char) getAsShort() );
@@ -111,9 +101,7 @@ public class SimpleDatum extends ADatum {
      * Verifies that this datum has been set, in preparation for encoding.
      */
     public void finish() {
-
-        if( !isSet() )
-            throw new IllegalStateException( "Attempted to finish a datum whose value has not been set" );
+        Checks.isTrue( isSet(), "Attempted to finish a datum whose value has not been set" );
     }
 
 
@@ -129,8 +117,8 @@ public class SimpleDatum extends ADatum {
 
         // if this datum isn't a boolean or integer type, we've got an error...
         GeneralDataType gt = type.generalType();
-        if( !((gt == SignedInteger) || (gt == UnsignedInteger) || (gt == Boolean)) )
-            throw new IllegalStateException( "Attempted to set boolean to simple datum that is neither boolean nor integer" );
+        Checks.isTrue( (gt == SignedInteger) || (gt == UnsignedInteger) || (gt == Boolean),
+                "Attempted to set boolean to simple datum that is neither boolean nor integer" );
 
         // set our value...
         setTo( _value ? 1L : 0L );
@@ -149,8 +137,8 @@ public class SimpleDatum extends ADatum {
 
         // if this datum isn't a boolean or integer type, we've got an error...
         GeneralDataType gt = type.generalType();
-        if( !((gt == SignedInteger) || (gt == UnsignedInteger) || (gt == Boolean)) )
-            throw new IllegalStateException( "Attempted to get boolean from simple datum that is neither boolean nor integer" );
+        Checks.isTrue( (gt == SignedInteger) || (gt == UnsignedInteger) || (gt == Boolean),
+                "Attempted to get boolean from simple datum that is neither boolean nor integer" );
 
         // get our velue...
         return (getAsLong() != 0);
@@ -170,8 +158,8 @@ public class SimpleDatum extends ADatum {
 
         // if this datum isn't a float or integer type, we've got an error...
         GeneralDataType gt = type.generalType();
-        if( !((gt == SignedInteger) || (gt == UnsignedInteger) || (gt == Float)) )
-            throw new IllegalStateException( "Attempted to set double on simple datum that is neither float nor integer" );
+        Checks.isTrue( (gt == SignedInteger) || (gt == UnsignedInteger) || (gt == Float),
+                "Attempted to set double on simple datum that is neither float nor integer" );
 
         // handle floats...
         if( gt == Float )
@@ -193,8 +181,8 @@ public class SimpleDatum extends ADatum {
 
         // if this datum isn't a float or integer type, we've got an error...
         GeneralDataType gt = type.generalType();
-        if( !((gt == SignedInteger) || (gt == UnsignedInteger) || (gt == Float)) )
-            throw new IllegalStateException( "Attempted to get double from simple datum that is neither float nor integer" );
+        Checks.isTrue( (gt == SignedInteger) || (gt == UnsignedInteger) || (gt == Float),
+                "Attempted to get double from simple datum that is neither float nor integer" );
 
         // handle floats...
         if( gt == Float )

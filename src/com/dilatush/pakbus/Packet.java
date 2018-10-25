@@ -5,6 +5,7 @@ import com.dilatush.pakbus.comms.Context;
 import com.dilatush.pakbus.comms.RawPacket;
 import com.dilatush.pakbus.messages.Msg;
 import com.dilatush.pakbus.util.BitBuffer;
+import com.dilatush.pakbus.util.Checks;
 import com.dilatush.pakbus.values.Datum;
 
 import java.nio.ByteBuffer;
@@ -54,8 +55,7 @@ public class Packet {
     public Packet( final Msg _message, final PacketOptions _options ) {
 
         // sanity checks...
-        if( (_message == null) || (_options == null) )
-            throw new IllegalArgumentException( "Missing required argument" );
+        Checks.required( _message, _options );
 
         // some setup...
         Context cx = _message.context();
@@ -104,8 +104,7 @@ public class Packet {
     public static Packet decode( final RawPacket _packet ) {
 
         // sanity checks...
-        if( _packet == null )
-            throw new IllegalArgumentException( "Missing required packet argument" );
+        Checks.required( _packet );
 
         // decode the packet datum...
         ByteBuffer bytes = _packet.packetBytes;

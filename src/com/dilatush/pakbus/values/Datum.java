@@ -3,6 +3,7 @@ package com.dilatush.pakbus.values;
 import com.dilatush.pakbus.NSec;
 import com.dilatush.pakbus.types.*;
 import com.dilatush.pakbus.util.BitBuffer;
+import com.dilatush.pakbus.util.Checks;
 
 import java.nio.ByteBuffer;
 
@@ -274,8 +275,7 @@ public interface Datum {
      */
     static Datum from( final DataType _type ) {
 
-        if( _type == null )
-            throw new IllegalArgumentException( "Required type is missing" );
+        Checks.required( _type );
 
         if( _type instanceof SimpleDataType )
             return new SimpleDatum( _type );
@@ -293,8 +293,7 @@ public interface Datum {
      */
     static Datum from( final PakBusType _type ) {
 
-        if( _type == null )
-            throw new IllegalArgumentException( "Required type is missing" );
+        Checks.required( _type );
 
         return from( DataTypes.fromPakBusType( _type ) );
     }
@@ -308,11 +307,11 @@ public interface Datum {
      */
     static Datum from( final String _typeName ) {
 
-        if( _typeName == null )
-            throw new IllegalArgumentException( "Required data type name is missing" );
+        Checks.required( _typeName );
+
         DataType dataType = DataTypes.fromName( _typeName );
-        if( dataType == null )
-            throw new IllegalArgumentException( "Data type does not exist: " + _typeName );
+        Checks.required( dataType );
+
         return from( dataType );
     }
 }

@@ -1,5 +1,7 @@
 package com.dilatush.pakbus;
 
+import com.dilatush.pakbus.util.Checks;
+
 /**
  * Instances of this class define a set of options for PakBus packets.  Instances are immutable and threadsafe.
  *
@@ -22,8 +24,7 @@ public class PacketOptions {
     public PacketOptions( final LinkState _state, final ExpectMore _expectMore, final Priority _priority ) {
 
         // sanity check...
-        if( (_state == null) || (_expectMore == null) || (_priority == null) )
-            throw new IllegalArgumentException( "Missing required argument" );
+        Checks.required( _state, _expectMore, _priority );
 
         state = _state;
         expectMore = _expectMore;

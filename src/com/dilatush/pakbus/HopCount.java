@@ -1,5 +1,7 @@
 package com.dilatush.pakbus;
 
+import com.dilatush.pakbus.util.Checks;
+
 import java.util.Objects;
 
 /**
@@ -19,8 +21,7 @@ public class HopCount {
     public HopCount( final int _hops ) {
 
         // sanity check...
-        if( (_hops < 0) || (_hops > 15) )
-            throw new IllegalArgumentException( "Invalid number of hops: " + _hops );
+        Checks.inBounds( _hops, 0, 15, "Invalid number of hops: " + _hops );
 
         hops = _hops;
     }

@@ -1,7 +1,6 @@
 package com.dilatush.pakbus.app;
 
 import com.dilatush.pakbus.HopCount;
-import com.dilatush.pakbus.Log;
 import com.dilatush.pakbus.NSec;
 import com.dilatush.pakbus.Node;
 import com.dilatush.pakbus.comms.Context;
@@ -30,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
+import java.util.logging.Logger;
 
 import static com.dilatush.pakbus.types.DataTypes.*;
 
@@ -39,6 +39,8 @@ import static com.dilatush.pakbus.types.DataTypes.*;
  * @author Tom Dilatush  tom@dilatush.com
  */
 public class Datalogger {
+
+    final static private Logger LOGGER = Logger.getLogger( Datalogger.class.getSimpleName() );
 
     final public Application application;
     final public String      name;
@@ -91,7 +93,7 @@ public class Datalogger {
 
         // if there's no active transaction with this number, then it's a mystery and we'll ignore it...
         else {
-            Log.logLn( "Received unexpected message; ignoring");
+            LOGGER.info( "Received message with unexpected transaction number (" + _msg.transactionNumber() + "), ignoring" );
         }
     }
 
@@ -180,7 +182,7 @@ public class Datalogger {
 
         // if the computed correction is greater than a second, issue it...
         if( Math.abs( correction.toMillis() ) > 1000 ) {
-            Log.logLn( "Correcting datalogger clock by " + correction );
+            LOGGER.info( "Correcting datalogger clock by " + correction );
             correctTime( correction );
         }
     }
@@ -235,8 +237,7 @@ public class Datalogger {
 
         // sanity checks...
         Checks.required( _tableName, _fieldName, _fieldType );
-        if( _swath < 1 )
-            throw new IllegalArgumentException( "Illegal value for swath: " + _swath );
+        Checks.inBounds( _swath, 1, 1000,"Illegal value for swath: " + _swath  );
 
         // send our request and wait for an answer...
         Msg msg = new GetValuesReqMsg( 0, _tableName, _fieldName, _fieldType, _swath, new RequestContext() );
@@ -596,7 +597,7 @@ public class Datalogger {
             // otherwise, we need to send another request...
             else {
 
-                Log.logLn( "Collecting supplementary record..." );
+                LOGGER.info( "Collecting supplementary record..." );
 
                 // some setup...
                 CollectDataReqMsg reqMsg = (CollectDataReqMsg)trans.request;
@@ -688,8 +689,7 @@ public class Datalogger {
 
         // get our base type...
         DataType dataType = DataTypes.fromPakBusType( PakBusType.decode( _fieldDefinition.fieldType ) );
-        if( dataType == null )
-            throw new IllegalStateException( "Invalid data type: " + _fieldDefinition.fieldType );
+        Checks.isNonNull( dataType, "Invalid data type: " + _fieldDefinition.fieldType );
 
         // if it's not an array, just return a simple type...
         if( _fieldDefinition.pieceSize == 1 )

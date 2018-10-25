@@ -4,6 +4,7 @@ import com.dilatush.pakbus.types.CP;
 import com.dilatush.pakbus.types.CompositeDataType;
 import com.dilatush.pakbus.types.DataType;
 import com.dilatush.pakbus.util.BitBuffer;
+import com.dilatush.pakbus.util.Checks;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,8 +28,7 @@ public class CompositeDatum extends ADatum {
         super( _type );
 
         // sanity check...
-        if( !(_type instanceof CompositeDataType) )
-            throw new IllegalArgumentException( "Attempted to create a CompositeDatum from a different data type: " + _type );
+        Checks.isTrue( _type instanceof CompositeDataType, "Attempted to create a CompositeDatum from a different data type: " + _type );
 
         // some setup...
         compositeType = (CompositeDataType) type;
@@ -53,8 +53,7 @@ public class CompositeDatum extends ADatum {
     public void changeTypeTo( final CompositeDataType _type ) {
 
         // sanity check...
-        if( _type == null )
-            throw new IllegalArgumentException( "Required type is missing" );
+        Checks.required( _type );
 
         // save the old properties...
         Map<String, Datum> oldProps = new HashMap<>( props );
@@ -89,8 +88,7 @@ public class CompositeDatum extends ADatum {
 
     public BitBuffer get( final String _name ) {
         Datum datum = getDatum( _name );
-        if( datum == null )
-            throw new IllegalArgumentException( "Property " + _name + " does not exist" );
+        Checks.required( datum );
         return datum.get();
     }
 
@@ -99,8 +97,7 @@ public class CompositeDatum extends ADatum {
 
         // call set() on the named property...
         Datum datum = getDatum( _name );
-        if( datum == null )
-            throw new IllegalArgumentException( "Property " + _name + " does not exist" );
+        Checks.required( datum );
         datum.set( _buffer );
     }
 
@@ -158,10 +155,8 @@ public class CompositeDatum extends ADatum {
     public void set( final BitBuffer _buffer ) {
 
         // sanity check...
-        if( buffer != null )
-            throw new IllegalStateException( "Attempting to set a value that has already been set" );
-        if( _buffer == null )
-            throw new IllegalArgumentException( "Required buffer argument is missing" );
+        Checks.required( _buffer );
+        Checks.isTrue( buffer == null, "Attempting to set a value that has already been set" );
 
         // if there are required properties laid out AFTER an optional property, we need to compute the length of them...
         int bitsAfterOptional = 0;

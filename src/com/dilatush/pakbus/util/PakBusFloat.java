@@ -24,8 +24,7 @@ public class PakBusFloat {
     public static BitBuffer toPakBusFloat( final double _n, final PakBusType _type ) {
 
         // sanity check...
-        if( _type == null )
-            throw new IllegalArgumentException( "Required argument missing" );
+        Checks.required( _type );
 
         // different strokes for different folks (or floating types)...
         switch( _type ) {
@@ -62,8 +61,7 @@ public class PakBusFloat {
     public static double fromPakBusFloat( final ByteBuffer _buffer, final PakBusType _type ) {
 
         // sanity check...
-        if( (_buffer == null) || (_type == null) )
-            throw new IllegalArgumentException( "Required argument missing" );
+        Checks.required( _buffer, _type );
 
         // different strokes for different folks (or floating types)...
         switch( _type ) {
@@ -77,16 +75,14 @@ public class PakBusFloat {
             case IEEE4:
             case IEEE4Lsf:
             case IEEE4L:
-                if( _buffer.limit() != 4 )
-                    throw new IllegalArgumentException( "Buffer is not the correct length: " + _buffer.limit() + " instead of 4" );
+                Checks.isTrue( _buffer.limit() == 4, "Buffer is not the correct length: " + _buffer.limit() + " instead of 4" );
                 _buffer.order( _type.getOrder() );
                 return (double)(_buffer.getFloat( 0 ));
 
             case IEEE8:
             case IEEE8Lsf:
             case IEEE8L:
-                if( _buffer.limit() != 8 )
-                    throw new IllegalArgumentException( "Buffer is not the correct length: " + _buffer.limit() + " instead of 8" );
+                Checks.isTrue( _buffer.limit() == 8, "Buffer is not the correct length: " + _buffer.limit() + " instead of 8" );
                 _buffer.order( _type.getOrder() );
                 return _buffer.getDouble( 0 );
 
@@ -113,8 +109,7 @@ public class PakBusFloat {
     private static double fromFP2( final ByteBuffer _buffer ) {
 
         // sanity check...
-        if( _buffer.limit() != 2 )
-            throw new IllegalArgumentException( "Buffer length is invalid: " + _buffer.limit() + " instead of 2" );
+        Checks.isTrue( _buffer.limit() == 2, "Buffer length is invalid: " + _buffer.limit() + " instead of 2" );
 
         // first we get the bits...
         _buffer.order( ByteOrder.BIG_ENDIAN );
@@ -192,8 +187,7 @@ public class PakBusFloat {
     private static double fromFP3( final ByteBuffer _buffer ) {
 
         // sanity check...
-        if( _buffer.limit() != 3 )
-            throw new IllegalArgumentException( "Buffer length is invalid: " + _buffer.limit() + " instead of 3" );
+        Checks.isTrue( _buffer.limit() == 3, "Buffer length is invalid: " + _buffer.limit() + " instead of 3" );
 
         // first we get the bits...
         _buffer.order( ByteOrder.BIG_ENDIAN );
@@ -285,8 +279,7 @@ public class PakBusFloat {
     private static double fromFP4( final ByteBuffer _buffer ) {
 
         // sanity check...
-        if( _buffer.limit() != 4 )
-            throw new IllegalArgumentException( "Buffer length is invalid: " + _buffer.limit() + " instead of 4" );
+        Checks.isTrue( _buffer.limit() == 4, "Buffer length is invalid: " + _buffer.limit() + " instead of 4" );
 
         // first we get the bits...
         _buffer.order( ByteOrder.BIG_ENDIAN );
@@ -317,8 +310,7 @@ public class PakBusFloat {
     private static ByteBuffer toFP4( final double _n ) {
 
         // sanity checks and setup...
-        if( Double.isNaN( _n ) )
-            throw new IllegalArgumentException( "Cannot convert a NaN to FP4" );
+        Checks.isTrue( !Double.isNaN( _n ), "Cannot convert a NaN to FP4" );
         int bits;
 
         // a bit of analysis...

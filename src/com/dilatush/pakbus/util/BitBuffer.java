@@ -33,8 +33,7 @@ public class BitBuffer {
     public BitBuffer( final ByteBuffer _buffer ) {
 
         // sanity checks...
-        if( (_buffer == null) || (_buffer.remaining() == 0) )
-            throw new IllegalArgumentException( "Byte buffer is missing or empty." );
+        Checks.hasRemaining( _buffer );
 
         capacity = _buffer.remaining() << 3;
         limit = capacity;
@@ -53,8 +52,8 @@ public class BitBuffer {
      */
     public BitBuffer( final int _capacity ) {
 
-        if( _capacity < 0 )
-            throw new IllegalArgumentException( "Invalid capacity: " + _capacity );
+        // sanity checks...
+        Checks.inBounds( _capacity, 0, 1000000, "Invalid capacity: " + _capacity );
 
         // calculate the byte buffer size needed to hold these bits...
         int bytesNeeded = (_capacity + 7) >>> 3;
@@ -76,8 +75,8 @@ public class BitBuffer {
      */
     public BitBuffer( final long _srcBits, final int _capacity ) {
 
-        if( (_capacity < 1 ) || (_capacity > 64) )
-            throw new IllegalArgumentException( "Invalid capacity: " + _capacity );
+        // sanity checks...
+        Checks.inBounds( _capacity, 1, 64, "Invalid capacity: " + _capacity );
 
         // calculate the byte buffer size needed to hold these bits...
         int bytesNeeded = (_capacity + 7) >>> 3;
@@ -210,8 +209,7 @@ public class BitBuffer {
      */
     public void put( final BitBuffer _srcBuffer ) {
 
-        if( _srcBuffer == null )
-            throw new IllegalArgumentException( "Required source buffer parameter is missing" );
+        Checks.required( _srcBuffer );
 
         if( _srcBuffer.remaining() == 0 )
             return;
@@ -300,8 +298,8 @@ public class BitBuffer {
     public BitBuffer get( final BitAddress _srcAddr, final int _bits ) {
 
         // sanity checks...
-        if( _bits < 0 )
-            throw new IllegalArgumentException( "Number of bits is invalid: " + _bits );
+        Checks.required( _srcAddr );
+        Checks.isTrue( _bits >= 0, "Number of bits is invalid: " + _bits );
 
         BitBuffer result = new BitBuffer( _bits );
         copyBits( result, ZERO, this, _srcAddr, _bits );
@@ -320,8 +318,7 @@ public class BitBuffer {
     public BitBuffer get( final int _bits ) {
 
         // sanity checks...
-        if( _bits < 0 )
-            throw new IllegalArgumentException( "Number of bits is invalid: " + _bits );
+        Checks.isTrue( _bits >= 0, "Number of bits is invalid: " + _bits );
 
         BitBuffer result = new BitBuffer( _bits );
         copyBits( result, ZERO, this, new BitAddress( position ), _bits );
@@ -363,8 +360,7 @@ public class BitBuffer {
     public long getBits( final BitAddress _srcAddress, final int _bits ) {
 
         // sanity check...
-        if( (_bits < 0) || (_bits > 64) )
-            throw new IllegalArgumentException( "Invalid number of bits: " + _bits );
+        Checks.inBounds( _bits, 0, 64, "Invalid number of bits: " + _bits );
 
         // get the requested bits...
         BitBuffer bb = get( _srcAddress, _bits );
@@ -463,18 +459,12 @@ public class BitBuffer {
     private void copyBits( final BitBuffer _dstBuffer, final BitAddress _dstAddr, final BitBuffer _srcBuffer, final BitAddress _srcAddr, final int _bits ) {
 
         // sanity checks...
-        if( (_dstAddr == null) || (_srcBuffer == null) || (_srcAddr == null) )
-            throw new IllegalArgumentException( "Required argument missing" );
-        if( _bits < 1 )
-            throw new IllegalArgumentException( "Invalid number of bits: " + _bits );
-        if( (_dstAddr.addr < 0) || (_dstAddr.addr >= _dstBuffer.limit) )
-            throw new IndexOutOfBoundsException( "Destination index invalid: " + _dstAddr );
-        if( (_srcAddr.addr < 0) || (_srcAddr.addr > _srcBuffer.limit) )
-            throw new IndexOutOfBoundsException( "Source index invalid: " + _dstAddr );
-        if( (_dstAddr.addr + _bits > _dstBuffer.capacity) )
-            throw new BufferOverflowException();
-        if( (_srcAddr.addr + _bits > _srcBuffer.capacity) )
-            throw new BufferUnderflowException();
+        Checks.required( _dstAddr, _srcBuffer, _srcAddr );
+        Checks.isTrue( _bits >= 1, "Invalid number of bits: " + _bits );
+        Checks.isTrue( (_dstAddr.addr >= 0) && (_dstAddr.addr < _dstBuffer.limit), "Destination index invalid: " + _dstAddr );
+        Checks.isTrue( (_srcAddr.addr >= 0) && (_srcAddr.addr < _srcBuffer.limit), "Source index invalid: " + _srcAddr );
+        Checks.isTrue( _dstAddr.addr + _bits <= _dstBuffer.capacity, "Destination buffer overflow" );
+        Checks.isTrue( _srcAddr.addr + _bits <= _srcBuffer.capacity, "Source buffer underflow" );
 
         // looks like we have enough bits and enough room to put them, so copy them...
         BitAddress srcAddr = _srcAddr;
@@ -523,16 +513,14 @@ public class BitBuffer {
 
 
     public void position( final int _position ) {
-        if( (_position < 0) || (_position > capacity) )
-            throw new IllegalArgumentException( "Position out of range: " + _position );
+        Checks.inBounds( _position, 0, capacity, "Position out of range: " + _position );
         position = _position;
     }
 
 
     public void adjustPosition( final int _adjustment ) {
         int newPosition = position + _adjustment;
-        if( (newPosition < 0) || (newPosition > capacity) )
-            throw new IllegalArgumentException( "Position adjustment out of range: " + _adjustment );
+        Checks.inBounds( newPosition, 0, capacity, "Position adjustment out of range: " + _adjustment );
         position = newPosition;
     }
 
@@ -543,23 +531,20 @@ public class BitBuffer {
 
 
     public void limit( final int _limit ) {
-        if( (_limit < 0) || (_limit > capacity) )
-            throw new IllegalArgumentException( "Limit out of range: " + _limit );
+        Checks.inBounds( _limit, 0, capacity, "Limit out of range: " + _limit );
         limit = _limit;
     }
 
 
     public void adjustLimit( final int _adjustment ) {
         int newLimit = limit + _adjustment;
-        if( (newLimit < 0) || (newLimit > capacity) )
-            throw new IllegalArgumentException( "Limit adjustment out of range: " + _adjustment );
+        Checks.inBounds( newLimit, 0, capacity, "Limit adjustment out of range: " + _adjustment );
         limit = newLimit;
     }
 
 
     public int remaining() {
-        if( limit < position )
-            throw new IllegalStateException( "Limit is less than the position" );
+        Checks.isTrue( limit >= position, "Limit is less than the position" );
         return limit - position;
     }
 
@@ -572,8 +557,7 @@ public class BitBuffer {
      */
     public ByteBuffer getByteBuffer() {
 
-        if( (limit & 7) != 0 )
-            throw new IllegalStateException( "Attempted to get ByteBuffer on instance without an even number of bytes" );
+        Checks.isTrue( (limit & 7) == 0, "Attempted to get ByteBuffer on instance without an even number of bytes" );
 
         ByteBuffer result = ByteBuffer.allocate( limit >> 3 );
         int oldPos = buffer.position();

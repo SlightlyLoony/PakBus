@@ -1,5 +1,7 @@
 package com.dilatush.pakbus.comms;
 
+import com.dilatush.pakbus.util.Checks;
+
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
@@ -28,8 +30,7 @@ public class Signature {
     public Signature( final ByteBuffer _bytes ) {
 
         // sanity check...
-        if( (_bytes == null) || (_bytes.limit() == 0) )
-            throw new IllegalArgumentException( "Packet bytes are missing" );
+        Checks.notEmpty( _bytes );
 
         // compute the signature of our given bytes...
         _bytes.position( 0 );

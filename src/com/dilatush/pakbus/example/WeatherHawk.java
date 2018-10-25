@@ -305,28 +305,4 @@ public class WeatherHawk {
     public Instant correctTime( final Duration _correction ) {
         return logger.correctTime( _correction );
     }
-
-
-    // TEST CODE
-    static public void main( String[] _args ) throws InterruptedException {
-
-        WeatherHawk wh = new WeatherHawk( "/dev/cu.usbserial-AC01R521", 1027 );
-
-        TableDefinitions loggerTableDefinitions = wh.getTableDefinitions();
-
-        SiteValues siteValues = wh.getSiteValues();
-
-        Instant loggerTime = wh.getTime();
-
-        Map<String,String> loggerSettings = wh.getAllSettings();
-
-        RealtimeRecord record = wh.collectRealtimeData();
-
-        List<HourlyRecord> hourlies = wh.collectHourlyData( 24 );
-
-        List<DailyRecord> dailies = wh.collectDailyData( 5 );
-
-        wh.hashCode();
-
-    }
 }

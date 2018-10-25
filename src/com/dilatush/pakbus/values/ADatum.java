@@ -5,6 +5,7 @@ import com.dilatush.pakbus.types.DataType;
 import com.dilatush.pakbus.types.DataTypes;
 import com.dilatush.pakbus.types.GeneralDataType;
 import com.dilatush.pakbus.util.BitBuffer;
+import com.dilatush.pakbus.util.Checks;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -26,8 +27,7 @@ public abstract class ADatum implements Datum {
 
     protected ADatum( final DataType _type ) {
 
-        if( _type == null )
-            throw new IllegalArgumentException( "Required type argument is missing" );
+        Checks.required( _type );
 
         type = _type;
         buffer = null;
@@ -122,13 +122,11 @@ public abstract class ADatum implements Datum {
         for( String part : parts ) {
 
             // if the current datum is not composite, we've got an error...
-            if( !(current instanceof CompositeDatum) )
-                throw new IllegalArgumentException( "Path component, parent of '" + part + "', is not a composite datum" );
+            Checks.isTrue( current instanceof CompositeDatum, "Path component, parent of '" + part + "', is not a composite datum" );
 
             // if it doesn't have that property, we've got an error...
             current = ((CompositeDatum)current).getDatum( part );
-            if( current == null )
-                throw new IllegalArgumentException( "Path component '" + part + "' does not exist" );
+            Checks.isNonNull( current, "Path component '" + part + "' does not exist" );
 
             // if we just got an array datum, use an index if there's one available...
             if( (current instanceof ArrayDatum) && (indiceIndex < _indices.length) )
@@ -158,8 +156,7 @@ public abstract class ADatum implements Datum {
         Datum datum = at( _path, _indices );
 
         // if it's not an array datum, we've got a problem...
-        if( !(datum instanceof ArrayDatum) )
-            throw new IllegalArgumentException( "Given path does not resolve to an array datum: " + _path );
+        Checks.isTrue( datum instanceof ArrayDatum, "Given path does not resolve to an array datum: " + _path );
 
         // we're good, so get outta here...
         return (ArrayDatum) datum;
@@ -272,12 +269,9 @@ public abstract class ADatum implements Datum {
     public void setTo( final ByteBuffer _buffer ) {
 
         // sanity checks...
-        if( _buffer == null )
-            throw new IllegalArgumentException( "Required buffer is missing" );
-        if( isSet() )
-            throw new IllegalStateException( "Attempting to set datum that is already set" );
-        if( (type.bits() & 7) != 0 )
-            throw new IllegalStateException( "Attempting to set a fixed-length datum that is not an even number of bytes long" );
+        Checks.required( _buffer );
+        Checks.isTrue( !isSet(), "Attempting to set datum that is already set" );
+        Checks.isTrue( (type.bits() & 7) == 0, "Attempting to set a fixed-length datum that is not an even number of bytes long" );
 
         set( new BitBuffer( _buffer ) );
     }
@@ -292,10 +286,8 @@ public abstract class ADatum implements Datum {
     public ByteBuffer getAsByteBuffer() {
 
         // sanity checks...
-        if( !isSet() )
-            throw new IllegalStateException( "Attempting to read a datum that has not been set" );
-        if( (size & 7) != 0 )
-            throw new IllegalStateException( "Attempting to read a datum that is not an even number of bytes long" );
+        Checks.isTrue( isSet(), "Attempting to read a datum that has not been set" );
+        Checks.isTrue( (size & 7) == 0, "Attempting to read a datum that is not an even number of bytes long" );
 
         return get().getByteBuffer();
     }
@@ -310,10 +302,9 @@ public abstract class ADatum implements Datum {
     public void setTo( final NSec _time ) {
 
         // sanity checks...
-        if( _time == null )
-            throw new IllegalArgumentException( "Required time argument missing" );
-        if( (type != DataTypes.NSEC) && (type != DataTypes.USEC) && (type != DataTypes.SEC) )
-            throw new IllegalStateException( "Attempted to set time on a non-time datum" );
+        Checks.required( _time );
+        Checks.isTrue( (type == DataTypes.NSEC) || (type == DataTypes.USEC) || (type == DataTypes.SEC),
+                "Attempted to set time on a non-time datum" );
 
         if( type == DataTypes.NSEC ) {
             at( "Seconds" ).setTo( _time.seconds );
@@ -343,10 +334,9 @@ public abstract class ADatum implements Datum {
     public NSec getAsNSec() {
 
         // sanity checks...
-        if( !isSet() )
-            throw new IllegalStateException( "Attempting to read a datum that has not been set" );
-        if( (type != DataTypes.NSEC) && (type != DataTypes.USEC) && (type != DataTypes.SEC) )
-            throw new IllegalStateException( "Attempted to get time on a non-time datum" );
+        Checks.isTrue( isSet(), "Attempting to read a datum that has not been set" );
+        Checks.isTrue( (type == DataTypes.NSEC) || (type == DataTypes.USEC) || (type == DataTypes.SEC),
+                "Attempted to get time a non-time datum" );
 
         if( type == DataTypes.NSEC ) {
             return new NSec( at( "Seconds" ).getAsInt(), at( "Nanoseconds" ).getAsInt() );
@@ -368,12 +358,9 @@ public abstract class ADatum implements Datum {
     protected void processIntegerSet( final long _value, final int _size, final int _actBits ) {
 
         // sanity checks...
-        if( isSet() )
-            throw new IllegalStateException( "Attempting to set datum that is already set" );
-        if( size() == 0 )
-            throw new IllegalStateException( "Attempting to set variable-length datum with fixed length data" );
-        if( _actBits > size() )
-            throw new IllegalArgumentException( "Attempting to set fixed-length datum with data that's too long" );
+        Checks.isTrue( !isSet(), "Attempting to set a datum that has already been set" );
+        Checks.isTrue( size() > 0, "Attempting to set variable-length datum with fixed length data" );
+        Checks.isTrue( _actBits <= size(), "Attempting to set fixed-length datum with data that's too long" );
 
         // sign-extend our value if necessary, then set it...
         long value = _value;
@@ -386,11 +373,9 @@ public abstract class ADatum implements Datum {
     protected long processIntegerGet( int _maxBits ) {
 
         // sanity checks...
-        if( buffer == null)
-            throw new IllegalStateException( "Attempted to read unset datum" );
-        if( (buffer.capacity() < 0) || (buffer.capacity() > _maxBits) )
-            throw new IllegalStateException( "Attempted to read from datum with " + buffer.capacity()
-                    + " bits; valid range is [0.." + _maxBits + "]" );
+        Checks.isTrue( isSet(), "Attempting to read a datum that has not been set" );
+        Checks.inBounds( buffer.capacity(), 0, _maxBits,
+                "Attempted to read from datum with " + buffer.capacity() + " bits; valid range is [0.." + _maxBits + "]" );
 
         // get our value and sign-extend it if necessary...
         long value = buffer.getBits();
