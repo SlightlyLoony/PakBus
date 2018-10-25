@@ -15,6 +15,7 @@ import com.dilatush.pakbus.types.PakBusType;
 import com.dilatush.pakbus.values.Datum;
 import com.dilatush.pakbus.values.SimpleDatum;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -96,6 +97,28 @@ public class WeatherHawk {
         // now turn it into hourly records...
         List<HourlyRecord> result = new ArrayList<>();
         record.forEach( (item) -> result.add( new HourlyRecord( item ) ) );
+        return result;
+    }
+
+
+    /**
+     * Collect and return the given number of the most recent daily weather data records from the WeatherHawk.
+     *
+     * @return the daily weather data collected, or null if there was a problem
+     */
+    public List<DailyRecord> collectDailyData( final int _records ) {
+
+        // get the data in the form of Datum instances...
+        TableDefinitions tds = logger.getTableDefinitions();
+        TableDefinition data2Table = tds.getTableDef( "data2" );
+        DataQuery query = new DataQuery( data2Table.index, data2Table.signature );
+        List<Datum> record = logger.collectMostRecent( query, _records );
+        if( record == null )
+            return null;
+
+        // now turn it into daily records...
+        List<DailyRecord> result = new ArrayList<>();
+        record.forEach( (item) -> result.add( new DailyRecord( item ) ) );
         return result;
     }
 
@@ -273,16 +296,24 @@ public class WeatherHawk {
     }
 
 
+    /**
+     * Corrects the datalogger's clock by the given duration, returning the original clock time.
+     *
+     * @param _correction the amount to correct the clock by (may be negative)
+     * @return the datalogger's clock before correction...
+     */
+    public Instant correctTime( final Duration _correction ) {
+        return logger.correctTime( _correction );
+    }
+
+
+    // TEST CODE
     static public void main( String[] _args ) throws InterruptedException {
 
         WeatherHawk wh = new WeatherHawk( "/dev/cu.usbserial-AC01R521", 1027 );
 
         TableDefinitions loggerTableDefinitions = wh.getTableDefinitions();
 
-        // bo 16.4
-        // alt 1481.938
-        wh.setSiteValues( 1481.938, 41.58389560, -111.84003310, 0 );
-        sleep( 10000 );
         SiteValues siteValues = wh.getSiteValues();
 
         Instant loggerTime = wh.getTime();
@@ -293,72 +324,9 @@ public class WeatherHawk {
 
         List<HourlyRecord> hourlies = wh.collectHourlyData( 24 );
 
+        List<DailyRecord> dailies = wh.collectDailyData( 5 );
+
         wh.hashCode();
 
-
-        // try setting and returning a value...
-//        logger.getTableDefinitions();
-//        Datum saver = new SimpleDatum( DataTypes.IEEE4 );
-//        saver.setTo( 1 );
-//        logger.setValues( "Public", "SaveSite", saver );
-//        Datum answer;
-//        answer = logger.getValues( "Status", "OSversion", PakBusType.ASCIIZ );
-//        Datum altitude = new SimpleDatum( DataTypes.IEEE4 );
-//        altitude.setTo( 1473 );
-//        logger.setValues( "SiteVal", "Altitude_m", altitude );
-//        answer = logger.getValues( "SiteVal", "Altitude_m", PakBusType.IEEE4 );
-//
-//
-//        // calibrate the clock...
-//        logger.calibrateClock();
-//
-//        // get the time...
-//        Instant time = logger.getTime();
-//        Duration error = Duration.between( Instant.now(), time );
-//
-//        // get the settings...
-//        Map<String,String> settings = logger.getAllSettings();
-//        List<String> settingNames = new ArrayList<>();
-//
-//        // collect most recent record from data2...
-//        TableDefinitions defs = logger.getTableDefinitions();
-//        TableDefinition pub = defs.getTableDef( "Public" );
-//        DataQuery query = new DataQuery( pub.index, pub.signature );
-//        TableDefinition data1 = defs.getTableDef( "data1" );
-//        DataQuery query2 = new DataQuery( data1.index, data1.signature );
-//
-//        NSec startTS = new NSec( Instant.now().minus( 50, ChronoUnit.HOURS ) );
-//        NSec endTS = new NSec( Instant.now().minus( 49, ChronoUnit.HOURS ) );
-//        List<Datum> records2 = logger.collectRangeOfTimestamps( query2, startTS, endTS );
-//
-//        while( true ) {
-//            List<Datum> records = logger.collectMostRecent( query, 1 );
-//            if( records == null ) break;
-//
-//            Datum datum = records.get( 0 );
-//
-//            pp( "AirTemp_C", datum );
-//            pp( "RH", datum );
-//            pp( "WindSpeed_ms", datum );
-//            pp( "WindDirect_deg", datum );
-//            pp( "Barometer_KPa", datum );
-//            pp( "Solar", datum );
-//            pp( "BatVolt_V", datum );
-//            pp( "RainYearly_mm", datum );
-//            pp( "Snow_Acc_Yearly", datum );
-//            pp( "SnowYearly_mm", datum );
-//            Log.logLn( "--------------------------" );
-//
-//            sleep(9000 );
-//        }
-//
-//        st.hashCode();
-//    }
-//
-//
-//    private static void pp( final String _name, final Datum _datum ) {
-//
-//        Datum value = _datum.at( _name );
-//        Log.logLn( _name + ": " + value.getAsDouble() );
     }
 }
