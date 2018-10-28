@@ -7,6 +7,7 @@ import com.dilatush.pakbus.util.BitBuffer;
 import com.dilatush.pakbus.util.Checks;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Objects;
 
 /**
@@ -361,8 +362,8 @@ public abstract class ADatum implements Datum {
         Checks.isTrue( size() > 0, "Attempting to set variable-length datum with fixed length data" );
         Checks.isTrue( _actBits <= size(), "Attempting to set fixed-length datum with data that's too long" );
 
-        // sign-extend our value if necessary, then set it...
-        long value = _value;
+        // fix endian-ness, sign-extend our value if necessary, then set it...
+        long value = fixEndianness( _value );
         if( type.generalType() == GeneralDataType.SignedInteger )
             value = ((value << size) >> size);  // sign extend...
         set( new BitBuffer( value, size() ) );
@@ -376,10 +377,25 @@ public abstract class ADatum implements Datum {
         Checks.inBounds( buffer.capacity(), 0, _maxBits,
                 "Attempted to read from datum with " + buffer.capacity() + " bits; valid range is [0.." + _maxBits + "]" );
 
-        // get our value and sign-extend it if necessary...
-        long value = buffer.getBits();
+        // get our value, fix endian-ness, and sign-extend it if necessary...
+        long value = fixEndianness( buffer.getBits() );
         if( type.generalType() == GeneralDataType.SignedInteger )
             value = ((value << size) >> size);  // sign extend...
         return value;
+    }
+
+
+    protected long fixEndianness( final long _value ) {
+        long fixedValue = 0;
+        if( ((size & 7) == 0) && (type.byteOrder() == ByteOrder.LITTLE_ENDIAN) ) {
+            int numBytes = (size >>> 3);
+            for( int c = 0; c < numBytes; c++ ) {
+                fixedValue <<= 8;
+                fixedValue |= (0xFF & (_value >>> (c << 3)));
+            }
+            return fixedValue;
+        }
+        else
+            return _value;
     }
 }
