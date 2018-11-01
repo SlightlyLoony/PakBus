@@ -40,7 +40,7 @@ import static com.dilatush.pakbus.types.DataTypes.*;
  */
 public class Datalogger {
 
-    final static private Logger LOGGER = Logger.getLogger( Datalogger.class.getSimpleName() );
+    final static private Logger LOGGER = Logger.getLogger( new Object(){}.getClass().getEnclosingClass().getCanonicalName() );
 
     final public Application application;
     final public String      name;
@@ -111,7 +111,9 @@ public class Datalogger {
             if( transaction.timeout.compareTo( now ) < 0 ) {
 
                 send( transaction.request );
-                transaction.timeout = now.plus( Duration.ofSeconds( transaction.timeoutSeconds ) );
+                transaction.timeout = now.plus( Duration.ofMillis( transaction.timeoutMilliSeconds ) );
+
+                LOGGER.finer( "Transaction timed out; resent: " + transaction.expectedClass.getSimpleName() );
             }
         } );
     }
@@ -142,7 +144,7 @@ public class Datalogger {
 
         // send the request...
         Msg msg = new ClockReqMsg( 0, new NSec( _correction ), new RequestContext() );
-        Transaction trans = sendRequest( msg, ClockRspMsg.class, 5 );
+        Transaction trans = sendRequest( msg, ClockRspMsg.class, 1000 );
 
         // wait for our response, or a bad response...
         try { trans.waiter.acquire(); } catch( InterruptedException _e ) { return null; }
@@ -205,7 +207,7 @@ public class Datalogger {
 
         // send our request and wait for an answer...
         Msg msg = new SetValuesReqMsg( 0, _tableName, _fieldName, _values, new RequestContext() );
-        Transaction trans = sendRequest( msg, SetValuesRspMsg.class, 5 );
+        Transaction trans = sendRequest( msg, SetValuesRspMsg.class, 2000 );
 
         // wait for our response, or a bad response...
         try { trans.waiter.acquire(); } catch( InterruptedException _e ) { return null; }
@@ -241,7 +243,7 @@ public class Datalogger {
 
         // send our request and wait for an answer...
         Msg msg = new GetValuesReqMsg( 0, _tableName, _fieldName, _fieldType, _swath, new RequestContext() );
-        Transaction trans = sendRequest( msg, GetValuesRspMsg.class, 5 );
+        Transaction trans = sendRequest( msg, GetValuesRspMsg.class, 2000 );
 
         // wait for our response, or a bad response...
         try { trans.waiter.acquire(); } catch( InterruptedException _e ) { return null; }
@@ -318,7 +320,7 @@ public class Datalogger {
 
         // send the request...
         Msg msg = new GetStringSettingsReqMsg( sb.toString(), new RequestContext() );
-        Transaction trans = sendRequest( msg, GetStringSettingsRspMsg.class, 5 );
+        Transaction trans = sendRequest( msg, GetStringSettingsRspMsg.class, 2000 );
 
         // wait for our response, or a bad response...
         try { trans.waiter.acquire(); } catch( InterruptedException _e ) { return null; }
@@ -353,7 +355,7 @@ public class Datalogger {
         while( !done ) {
 
             Msg msg = new FileReceiveReqMsg( 0, _fileName, 0, offset, swath, new RequestContext() );
-            Transaction trans = sendRequest( msg, FileReceiveRspMsg.class, 10 );
+            Transaction trans = sendRequest( msg, FileReceiveRspMsg.class, 10000 );
 
             // wait for our response, or a bad response (in which case we return with nothing)...
             try { trans.waiter.acquire(); } catch( InterruptedException _e ) { return null; }
@@ -535,13 +537,16 @@ public class Datalogger {
         while( !done ) {
 
             // send our request...
-            trans = sendRequest( msg, CollectDataRspMsg.class, 10 );
+            long start = System.currentTimeMillis();
+            trans = sendRequest( msg, CollectDataRspMsg.class, 2000 );
 
             // wait for our response, or a bad response (in which case we return with nothing)...
             try { trans.waiter.acquire(); } catch( InterruptedException _e ) { return null; }
 
             // if we got no response, just leave with nothing...
             if( trans.response == null ) return null;
+            long time = System.currentTimeMillis() - start;
+            LOGGER.fine( "Collect data request: " + time + " milliseconds round trip" );
 
             // otherwise, hopefully we got a chunk of data...
             rspMsg = (CollectDataRspMsg) trans.response;
@@ -708,13 +713,13 @@ public class Datalogger {
      *
      * @param _msg the request message to send
      * @param _expectedResponseClass the class of the expected response message
-     * @param _maxWaitSeconds the maximum number of seconds to wait for a response
+     * @param _maxWaitMilliseconds the maximum number of seconds to wait for a response
      * @return the transaction record
      */
-    private synchronized Transaction sendRequest( final Msg _msg, final Class _expectedResponseClass, final int _maxWaitSeconds ) {
+    private synchronized Transaction sendRequest( final Msg _msg, final Class _expectedResponseClass, final int _maxWaitMilliseconds ) {
 
         // get a new transaction and number to use...
-        Transaction transaction = getTransaction( _msg, _expectedResponseClass, _maxWaitSeconds );
+        Transaction transaction = getTransaction( _msg, _expectedResponseClass, _maxWaitMilliseconds );
 
         // send the request...
         send( _msg );
@@ -723,15 +728,15 @@ public class Datalogger {
     }
 
 
-    private synchronized Transaction getTransaction( final Msg _msg, final Class _expectedResponseClass, final int _maxWaitSeconds ) {
+    private synchronized Transaction getTransaction( final Msg _msg, final Class _expectedResponseClass, final int _maxWaitMilliseconds ) {
 
         // create our transaction, stuff it away, and return it...
         Transaction result = new Transaction();
         result.waiter = new Semaphore( 0 );
         result.response = null;
         result.expectedClass = _expectedResponseClass;
-        result.timeout = Instant.now().plus( Duration.ofSeconds( _maxWaitSeconds ) );
-        result.timeoutSeconds = _maxWaitSeconds;
+        result.timeout = Instant.now().plus( Duration.ofMillis( _maxWaitMilliseconds ) );
+        result.timeoutMilliSeconds = _maxWaitMilliseconds;
         result.request = _msg;
         transactions.put( _msg.context().transactionNumber(), result );
         return result;
@@ -807,7 +812,7 @@ public class Datalogger {
         private Msg       response;
         private Instant   timeout;
         private Class     expectedClass;
-        private int       timeoutSeconds;
+        private int       timeoutMilliSeconds;
         private Msg       request;
     }
 }

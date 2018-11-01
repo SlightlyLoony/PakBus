@@ -26,7 +26,7 @@ import java.util.logging.Logger;
  */
 public class Application {
 
-    final static private Logger LOGGER = Logger.getLogger( Application.class.getSimpleName() );
+    final static private Logger LOGGER = Logger.getLogger( new Object(){}.getClass().getEnclosingClass().getCanonicalName() );
 
     final public Node                    address;
 

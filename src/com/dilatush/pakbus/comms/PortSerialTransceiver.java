@@ -18,7 +18,7 @@ import java.util.logging.Logger;
  */
 public class PortSerialTransceiver implements SerialTransceiver {
 
-    final static private Logger LOGGER = Logger.getLogger( PortSerialTransceiver.class.getSimpleName() );
+    final static private Logger LOGGER = Logger.getLogger( new Object(){}.getClass().getEnclosingClass().getCanonicalName() );
 
     final static public int STOP_BITS_ONE            = 1;
     final static public int STOP_BITS_ONE_POINT_FIVE = 2;

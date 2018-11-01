@@ -19,7 +19,7 @@ import java.util.logging.Logger;
 public class SerialPacketTransceiver implements PacketTransceiver {
 
 
-    final static private Logger LOGGER = Logger.getLogger( SerialPacketTransceiver.class.getSimpleName() );
+    final static private Logger LOGGER = Logger.getLogger( new Object(){}.getClass().getEnclosingClass().getCanonicalName() );
 
     final static private Duration LONG_SYNC_THRESHOLD = Duration.ofSeconds( 15 );  // time since last tx when we use a long sync instead of short...
     final static private int      SHORT_SYNC          = 3;  // number of sync bytes when we're using a short sync...
@@ -110,14 +110,14 @@ public class SerialPacketTransceiver implements PacketTransceiver {
 
 
     /**
-     * Returns the next packet received from this packet transceiver, blocking for up to one second until it becomes available.
+     * Returns the next packet received from this packet transceiver, blocking for up to one tenth second until it becomes available.
      *
      * @return the next packet received, or null if none were received
      * @throws InterruptedException if interrupted while blocked
      */
     @Override
     public RawPacket rx() throws InterruptedException {
-        return reader.queue.pollFirst( 1, TimeUnit.SECONDS  );
+        return reader.queue.pollFirst( 100, TimeUnit.MILLISECONDS  );
     }
 
 
